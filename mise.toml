@@ -1,9 +1,10 @@
 [tools]
+bun = "1.2.21"
 go = "1.25.1"
 watchexec = "2.3.2"
 
 [tasks.setup]
-run = ["brew install cloc"]
+run = ["brew install gpg cloc"]
 
 [tasks.dev]
 run = "mise start-watch"
@@ -19,4 +20,4 @@ run = ["mise watch --debounce 250ms --exts .go,.json --restart start"]
 run = ["rm go.sum", "go mod tidy"]
 
 [tasks.cloc]
-run = "cloc ."
+run = "cloc --exclude-dir=node_modules,dist ."
