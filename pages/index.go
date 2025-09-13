@@ -11,9 +11,13 @@ import (
 func IndexPage(req *foundation.Request) (*Page, error) {
 	log.Println("rendering index page")
 
-	body := html.H1(attr.Class("text-3xl font-bold p-8 text-center"),
+	var body html.Blocks
+	body.Add(html.H1(attr.Class("text-3xl font-bold p-8 text-center"),
 		html.Text(req.Config.Message),
-	)
+	))
+	body.Add(html.P(attr.Class("text-center"),
+		html.Button(attr.Class("btn-primary"), html.Text("Go!")),
+	))
 	page := &Page{
 		Title: "Foundation",
 		Body:  body,

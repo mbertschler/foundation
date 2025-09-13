@@ -3,6 +3,9 @@ bun = "1.2.21"
 go = "1.25.1"
 watchexec = "2.3.2"
 
+[env]
+_.path = ['{{config_root}}/browser/node_modules/.bin']
+
 [tasks.setup]
 run = ["brew install gpg cloc"]
 

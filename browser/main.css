@@ -1,3 +1,4 @@
 @import "tailwindcss";
+@import "basecoat-css";
 
 @source "../pages/**/*.go";
