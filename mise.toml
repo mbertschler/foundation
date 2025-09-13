@@ -7,14 +7,29 @@ watchexec = "2.3.2"
 run = ["brew install gpg cloc"]
 
 [tasks.dev]
-run = "mise start-watch"
+depends = "browser-install"
+run = "mise browser-watch ::: server-watch"
 
-[tasks.start]
-run = ["go run ./cmd/foundation-demo"]
+[tasks.server]
+run = ["go run ./cmd/foundation-demo -dev"]
 sources = ["**/*.go", "go.mod", "go.sum"]
 
-[tasks.start-watch]
-run = ["mise watch --debounce 250ms --exts .go,.json --restart start"]
+[tasks.server-watch]
+run = ["mise watch --debounce 250ms --exts .go,.json --restart server"]
+
+[tasks.browser-build]
+dir = "browser"
+run = "bun build"
+
+[tasks.browser-watch]
+dir = "browser"
+run = "bun watch"
+
+[tasks.browser-install]
+description = 'Installs dependencies with bun'
+dir = 'browser'
+run = 'bun install'
+sources = ['package.json', 'bun.lock', 'mise.toml']
 
 [tasks.tidy]
 run = ["rm go.sum", "go mod tidy"]

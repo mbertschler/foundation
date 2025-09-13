@@ -7,5 +7,6 @@ type Config struct {
 	HostPort string
 	Message  string
 
-	Startup time.Time
+	Startup       time.Time
+	DevFileServer bool
 }

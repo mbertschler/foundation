@@ -20,7 +20,9 @@ const (
 
 // Command-line flag variables
 var (
-	configPath    string
+	configPath string
+	devMode    bool
+
 	defaultConfig = foundation.Config{
 		HostPort: defaultHostPort,
 	}
@@ -33,6 +35,7 @@ func main() {
 	log.Println("Foundation demo server 🚀")
 
 	flag.StringVar(&configPath, "config", defaultConfigPath, "foundation config JSON file path")
+	flag.BoolVar(&devMode, "dev", false, "dev mode: serve asset files from browser/dist directory instead of Go embedded assets")
 	// more flags if needed
 	flag.Parse()
 
@@ -55,7 +58,7 @@ func main() {
 func loadConfig(path string) (*foundation.Config, error) {
 	config := defaultConfig
 
-	buf, err := os.ReadFile(configPath)
+	buf, err := os.ReadFile(path)
 	if err != nil {
 		return nil, errors.Wrap(err, "can't read config file")
 	}
@@ -69,5 +72,10 @@ func loadConfig(path string) (*foundation.Config, error) {
 
 func postProcessConfig(config *foundation.Config, startup time.Time) error {
 	config.Startup = startup
+
+	if devMode {
+		log.Println("dev mode, serving asset files from disk")
+		config.DevFileServer = true
+	}
 	return nil
 }

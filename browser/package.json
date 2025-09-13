@@ -2,5 +2,14 @@
   "name": "foundation",
   "module": "index.js",
   "type": "module",
-  "private": true
+  "private": true,
+  "scripts": {
+    "build": "bun run build:css",
+    "build:css": "tailwindcss -i ./main.css -o ./dist/bundle.css --minify",
+    "watch": "bun run watch:css",
+    "watch:css": "tailwindcss -i ./main.css -o ./dist/bundle.css --watch"
+  },
+  "dependencies": {
+    "@tailwindcss/cli": "4.1.13"
+  }
 }

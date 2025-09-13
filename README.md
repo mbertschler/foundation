@@ -1,5 +1,5 @@
 # foundation
-Opinionated Go based web app template.
+Opinionated Go based web app template using modern tools.
 
 ## Running the `foundation-demo`
 
