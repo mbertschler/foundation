@@ -10,7 +10,8 @@
     "purge-css": "purgecss --css ./dist/main.css --output ./dist/main.min.css --content '../pages/**/*.go'",
     "watch": "concurrently 'bun watch-css' 'bun watch-esbuild'",
     "watch-css": "tailwindcss -i ./main.css -o ./dist/main.css --watch",
-    "watch-esbuild": "esbuild main.js --bundle --minify --sourcemap --outdir=dist --watch"
+    "watch-esbuild": "esbuild main.js --bundle --minify --sourcemap --outdir=dist --watch",
+    "compress": "gzip -9c dist/main.css > dist/main.css.gz && gzip -9c dist/main.js > dist/main.js.gz && ls -hl dist/"
   },
   "dependencies": {
     "@hotwired/stimulus": "3.2.2",
