@@ -5,6 +5,9 @@
 // For now let's just import everything, and let esbuild tree-shake the unused stuff
 import "basecoat-css/all";
 
+// import * as Turbo from "@hotwired/turbo"
+import "@hotwired/turbo";
+
 import { setupStimulus } from "./stimulus";
 setupStimulus();
 
