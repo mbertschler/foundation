@@ -1,0 +1,22 @@
+[tools]
+go = "1.25.1"
+watchexec = "2.3.2"
+
+[tasks.setup]
+run = ["brew install cloc"]
+
+[tasks.dev]
+run = "mise start-watch"
+
+[tasks.start]
+run = ["go run ./cmd/foundation-demo"]
+sources = ["**/*.go", "go.mod", "go.sum"]
+
+[tasks.start-watch]
+run = ["mise watch --debounce 250ms --exts .go,.json --restart start"]
+
+[tasks.tidy]
+run = ["rm go.sum", "go mod tidy"]
+
+[tasks.cloc]
+run = "cloc ."

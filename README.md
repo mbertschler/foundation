@@ -1,12 +1,14 @@
 # foundation
 Opinionated Go based web app template.
 
-
 ## Running the `foundation-demo`
 
+First, install [Mise](https://mise.jdx.dev/getting-started.html). Then run:
+
 ```bash
-go run ./cmd/foundation-demo
+mise setup 
+mise dev
 ```
 
 Then open your browser at [http://localhost:3000](http://localhost:3000).
-Change details in `foundation_config.json` as needed and restart the app to see the changes.
+Change details in `foundation_config.json` as needed and the app will restart automatically.
