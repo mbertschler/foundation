@@ -4,13 +4,17 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "build": "bun run build:css",
-    "build:css": "tailwindcss -i ./main.css -o ./dist/bundle.css --minify",
+    "build": "bun run build:css && bun run purge:css",
+    "build:css": "tailwindcss -i ./main.css -o ./dist/bundle.css --minify --optimize",
     "watch": "bun run watch:css",
-    "watch:css": "tailwindcss -i ./main.css -o ./dist/bundle.css --watch --optimize --minify"
+    "watch:css": "tailwindcss -i ./main.css -o ./dist/bundle.css --watch",
+    "purge:css": "purgecss --css ./dist/bundle.css --output ./dist/bundle.purged.css --content '../pages/**/*.go'"
   },
   "dependencies": {
-    "@tailwindcss/cli": "4.1.13",
     "basecoat-css": "0.3.2"
+  },
+  "devDependencies": {
+    "@tailwindcss/cli": "4.1.13",
+    "purgecss": "^7.0.2"
   }
 }
