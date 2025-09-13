@@ -18,6 +18,27 @@ func IndexPage(req *foundation.Request) (*Page, error) {
 	body.Add(html.P(attr.Class("text-center"),
 		html.Button(attr.Class("btn-primary"), html.Text("Go!")),
 	))
+
+	clickHandler := `document.dispatchEvent(new CustomEvent('basecoat:toast', {
+	    detail: {
+	      config: {
+	        category: 'success',
+	        title: 'Success',
+	        description: 'A success toast called from the front-end.',
+	        cancel: {
+	          label: 'Dismiss'
+	        }
+	      }
+	    }
+	  }))
+	`
+	body.Add(html.P(attr.Class("text-center mt-4"),
+		html.Button(attr.Class("btn-outline").Attr("onclick", clickHandler),
+			html.Text("Toast from front-end"),
+		),
+	))
+	body.Add(html.Div(attr.Id("toaster").Class("toaster")))
+
 	page := &Page{
 		Title: "Foundation",
 		Body:  body,

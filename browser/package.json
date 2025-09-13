@@ -4,17 +4,21 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "build": "bun run build:css && bun run purge:css",
-    "build:css": "tailwindcss -i ./main.css -o ./dist/bundle.css --minify --optimize",
-    "watch": "bun run watch:css",
-    "watch:css": "tailwindcss -i ./main.css -o ./dist/bundle.css --watch",
-    "purge:css": "purgecss --css ./dist/bundle.css --output ./dist/bundle.purged.css --content '../pages/**/*.go'"
+    "build": "concurrently 'bun build-css' 'bun build-js' && bun run purge-css",
+    "build-css": "tailwindcss -i ./main.css -o ./dist/main.css --optimize --minify",
+    "build-js": "esbuild main.js --bundle --minify --sourcemap --metafile=dist/esbuild_meta.json --outdir=dist",
+    "purge-css": "purgecss --css ./dist/main.css --output ./dist/main.min.css --content '../pages/**/*.go'",
+    "watch": "concurrently 'bun watch-css' 'bun watch-esbuild'",
+    "watch-css": "tailwindcss -i ./main.css -o ./dist/main.css --watch",
+    "watch-esbuild": "esbuild main.js --bundle --minify --sourcemap --outdir=dist --watch"
   },
   "dependencies": {
     "basecoat-css": "0.3.2"
   },
   "devDependencies": {
     "@tailwindcss/cli": "4.1.13",
-    "purgecss": "^7.0.2"
+    "concurrently": "9.2.1",
+    "esbuild": "0.25.9",
+    "purgecss": "7.0.2"
   }
 }
