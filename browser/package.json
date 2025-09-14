@@ -4,14 +4,14 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "build": "concurrently 'bun build-css' 'bun build-js' && bun run purge-css",
+    "build": "concurrently 'bun build-css' 'bun build-js' && bun run purge-css && bun run compress",
     "build-css": "tailwindcss -i ./main.css -o ./dist/main.css --optimize --minify",
     "build-js": "esbuild main.js --bundle --minify --sourcemap --metafile=dist/esbuild_meta.json --outdir=dist",
     "purge-css": "purgecss --css ./dist/main.css --output ./dist/main.min.css --content '../pages/**/*.go'",
     "watch": "concurrently 'bun watch-css' 'bun watch-esbuild'",
     "watch-css": "tailwindcss -i ./main.css -o ./dist/main.css --watch",
     "watch-esbuild": "esbuild main.js --bundle --minify --sourcemap --outdir=dist --watch",
-    "compress": "gzip -9c dist/main.css > dist/main.css.gz && gzip -9c dist/main.js > dist/main.js.gz && ls -hl dist/"
+    "compress": "gzip -9c dist/main.css > dist/main.css.gz && gzip -9c dist/main.min.css > dist/main.min.css.gz && gzip -9c dist/main.js > dist/main.js.gz && ls -hl dist/"
   },
   "dependencies": {
     "@hotwired/stimulus": "3.2.2",

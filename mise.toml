@@ -22,7 +22,7 @@ run = ["mise watch --debounce 250ms --exts .go,.json --restart server"]
 
 [tasks.browser-build]
 dir = "browser"
-run = "bun build"
+run = "bun run build"
 
 [tasks.browser-watch]
 dir = "browser"
