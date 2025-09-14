@@ -1,10 +1,8 @@
 package db
 
 import (
-	"context"
 	"database/sql"
 	"fmt"
-	"log"
 	"os"
 	"path/filepath"
 
@@ -65,34 +63,5 @@ func StartDB(context *foundation.Context) (*foundation.DB, error) {
 		},
 	}
 
-	err = demo(ctx, fdb)
-	if err != nil {
-		return nil, errors.Wrap(err, "demo")
-	}
-
 	return fdb, nil
-}
-
-func demo(ctx context.Context, db *foundation.DB) error {
-	user := &foundation.User{DisplayName: "John Doe", UserName: "john@example.com"}
-
-	exists, err := db.Users.ExistsByUsername(ctx, user.UserName)
-	if err != nil {
-		return errors.Wrap(err, "ExistsByUsername")
-	}
-
-	if !exists {
-		err = db.Users.Insert(ctx, user)
-		if err != nil {
-			return errors.Wrap(err, "Insert")
-		}
-	}
-
-	selectedUser, err := db.Users.ByUsername(ctx, user.UserName)
-	if err != nil {
-		return errors.Wrap(err, "ByUsername")
-	}
-
-	log.Printf("User: %+v\n", selectedUser)
-	return nil
 }
