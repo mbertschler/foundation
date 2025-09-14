@@ -15,7 +15,7 @@ type Server struct {
 	router *httprouter.Router
 }
 
-func StartServer(ctx *foundation.Context) error {
+func RunServer(ctx *foundation.Context) error {
 	srv := &Server{
 		ctx:    ctx,
 		router: httprouter.New(),
@@ -28,7 +28,9 @@ func StartServer(ctx *foundation.Context) error {
 		return errors.Wrap(err, "setupGeneralRoutes")
 	}
 
-	return srv.start()
+	hostPort := srv.ctx.Config.HostPort
+	log.Printf("starting server on http://%s", hostPort)
+	return http.ListenAndServe(hostPort, srv.router)
 }
 
 func (s *Server) setupPageRoutes() {
@@ -48,19 +50,5 @@ func (s *Server) setupGeneralRoutes() error {
 		http.Error(w, "page not found", http.StatusNotFound)
 	})
 
-	return nil
-}
-
-func (s *Server) start() error {
-	hostPort := s.ctx.Config.HostPort
-	log.Printf("starting server on http://%s", hostPort)
-	c := make(chan bool)
-	go func() {
-		c <- true
-		http.ListenAndServe(hostPort, s.router)
-	}()
-	// hack to make sure the server goroutine is started
-	// otherwise we could get "all goroutines are asleep - deadlock!"
-	<-c
 	return nil
 }

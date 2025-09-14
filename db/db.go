@@ -32,7 +32,9 @@ func StartDB(context *foundation.Context) (*foundation.DB, error) {
 	if err != nil {
 		return nil, errors.Wrapf(err, "sql.Open with %q", connString)
 	}
-	defer sqldb.Close()
+
+	// TODO: close somewhere else on shutdown
+	// defer sqldb.Close()
 
 	// Create Bun database instance
 	db := bun.NewDB(sqldb, sqlitedialect.New())

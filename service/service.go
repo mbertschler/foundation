@@ -36,9 +36,9 @@ func RunApp(config *foundation.Config) int {
 		return 1
 	}
 
-	err = server.StartServer(context)
+	err = server.RunServer(context)
 	if err != nil {
-		log.Println("StartServer error:", err)
+		log.Println("RunServer error:", err)
 		return 1
 	}
 
