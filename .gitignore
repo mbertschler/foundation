@@ -34,3 +34,5 @@ go.work.sum
 # Ignore everything in browser/dist/
 browser/dist/*
 !browser/dist/keep
+
+_data/

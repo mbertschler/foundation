@@ -6,6 +6,7 @@ import "time"
 type Config struct {
 	HostPort string
 	Message  string
+	DBPath   string
 
 	Startup       time.Time
 	DevFileServer bool

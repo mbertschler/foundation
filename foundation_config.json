@@ -1,4 +1,5 @@
 {
     "HostPort": "localhost:3000",
+    "DBPath": "./_data/foundation.db",
     "Message": "Foundation welcomes the world! 🌍"
 }

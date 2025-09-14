@@ -5,6 +5,7 @@ import (
 	"log"
 
 	"github.com/mbertschler/foundation"
+	"github.com/mbertschler/foundation/db"
 	"github.com/mbertschler/foundation/server"
 )
 
@@ -28,7 +29,14 @@ func RunApp(config *foundation.Config) int {
 		Config:  config,
 	}
 
-	err := server.StartServer(context)
+	var err error
+	context.DB, err = db.StartDB(context)
+	if err != nil {
+		log.Println("StartDB error:", err)
+		return 1
+	}
+
+	err = server.StartServer(context)
 	if err != nil {
 		log.Println("StartServer error:", err)
 		return 1

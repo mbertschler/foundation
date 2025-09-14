@@ -1,0 +1,86 @@
+package db
+
+import (
+	"context"
+	"database/sql"
+	"fmt"
+	"log"
+	"os"
+	"path/filepath"
+
+	"github.com/mbertschler/foundation"
+	"github.com/pkg/errors"
+	"github.com/uptrace/bun"
+	"github.com/uptrace/bun/dialect/sqlitedialect"
+	"github.com/uptrace/bun/driver/sqliteshim"
+	"github.com/uptrace/bun/extra/bundebug"
+)
+
+func StartDB(context *foundation.Context) (*foundation.DB, error) {
+	ctx := context.Context
+
+	path := context.Config.DBPath
+
+	dir := filepath.Dir(path)
+	err := os.MkdirAll(dir, 0755)
+	if err != nil {
+		return nil, errors.Wrapf(err, "MkdirAll %q", dir)
+	}
+	connString := fmt.Sprintf("file:%s?cache=shared", context.Config.DBPath)
+	sqldb, err := sql.Open(sqliteshim.ShimName, connString)
+	if err != nil {
+		return nil, errors.Wrapf(err, "sql.Open with %q", connString)
+	}
+	defer sqldb.Close()
+
+	// Create Bun database instance
+	db := bun.NewDB(sqldb, sqlitedialect.New())
+
+	// Add query debugging (optional)
+	db.AddQueryHook(bundebug.NewQueryHook(
+		bundebug.WithVerbose(true),
+	))
+
+	// Create table
+	_, err = db.NewCreateTable().Model((*foundation.User)(nil)).IfNotExists().Exec(ctx)
+	if err != nil {
+		return nil, errors.Wrap(err, "create table")
+	}
+
+	fdb := &foundation.DB{
+		Users: &usersDB{
+			db: db,
+		},
+	}
+
+	err = demo(ctx, fdb)
+	if err != nil {
+		return nil, errors.Wrap(err, "demo")
+	}
+
+	return fdb, nil
+}
+
+func demo(ctx context.Context, db *foundation.DB) error {
+	user := &foundation.User{DisplayName: "John Doe", UserName: "john@example.com"}
+
+	exists, err := db.Users.ExistsByUsername(ctx, user.UserName)
+	if err != nil {
+		return errors.Wrap(err, "ExistsByUsername")
+	}
+
+	if !exists {
+		err = db.Users.Insert(ctx, user)
+		if err != nil {
+			return errors.Wrap(err, "Insert")
+		}
+	}
+
+	selectedUser, err := db.Users.ByUsername(ctx, user.UserName)
+	if err != nil {
+		return errors.Wrap(err, "ByUsername")
+	}
+
+	log.Printf("User: %+v\n", selectedUser)
+	return nil
+}
