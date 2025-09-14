@@ -13,6 +13,15 @@ type usersDB struct {
 	db *bun.DB
 }
 
+func (u *usersDB) ByID(ctx context.Context, id int64) (*foundation.User, error) {
+	var user foundation.User
+	err := u.db.NewSelect().Model(&user).Where("id = ?", id).Scan(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return &user, nil
+}
+
 func (u *usersDB) ByUsername(ctx context.Context, username string) (*foundation.User, error) {
 	var user foundation.User
 	err := u.db.NewSelect().Model(&user).Where("user_name = ?", username).Scan(ctx)

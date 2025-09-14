@@ -27,6 +27,7 @@ type DB struct {
 }
 
 type UserDB interface {
+	ByID(ctx context.Context, id int64) (*User, error)
 	ByUsername(ctx context.Context, username string) (*User, error)
 	ExistsByUsername(ctx context.Context, username string) (bool, error)
 	Insert(ctx context.Context, user *User) error

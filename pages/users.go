@@ -13,10 +13,17 @@ import (
 )
 
 func UsersFrame(req *foundation.Request) (html.Block, error) {
-	if req.Request.Method == http.MethodPost {
+
+	switch req.Request.Method {
+	case http.MethodPost:
 		err := postNewUser(req)
 		if err != nil {
 			return nil, errors.Wrap(err, "postNewUser")
+		}
+	case http.MethodPatch:
+		err := patchUser(req)
+		if err != nil {
+			return nil, errors.Wrap(err, "patchUser")
 		}
 	}
 
@@ -31,6 +38,7 @@ func UsersFrame(req *foundation.Request) (html.Block, error) {
 				html.H2(attr.Class("mx-auto max-w-screen-lg text-2xl font-bold pb-4"), html.Text("All Users")),
 				usersTable(allUsers),
 				newUserForm(),
+				editUserForms(allUsers),
 			),
 		),
 	), nil
@@ -78,6 +86,69 @@ func postNewUser(req *foundation.Request) error {
 	return nil
 }
 
+func patchUser(req *foundation.Request) error {
+	r := req.Request
+	err := r.ParseForm()
+	if err != nil {
+		http.Error(req.Writer, "Failed to parse form", http.StatusBadRequest)
+		return errors.Wrap(err, "ParseForm")
+	}
+
+	// Extract user ID from URL path
+	userIDStr := req.Params.ByName("id")
+	if userIDStr == "" {
+		http.Error(req.Writer, "User ID is required", http.StatusBadRequest)
+		return errors.New("missing user ID")
+	}
+
+	var userID int64
+	_, err = fmt.Sscanf(userIDStr, "%d", &userID)
+	if err != nil {
+		http.Error(req.Writer, "Invalid user ID", http.StatusBadRequest)
+		return errors.Wrap(err, "invalid user ID")
+	}
+
+	// Get existing user
+	existingUser, err := req.DB.Users.ByID(req.Context.Context, userID)
+	if err != nil {
+		http.Error(req.Writer, "User not found", http.StatusNotFound)
+		return errors.Wrap(err, "user not found")
+	}
+
+	displayName := r.FormValue("display_name")
+	username := r.FormValue("username")
+	password := r.FormValue("password")
+
+	// Check if username is being changed and if it already exists
+	if username != existingUser.UserName {
+		exists, err := req.DB.Users.ExistsByUsername(req.Context.Context, username)
+		if err != nil {
+			return errors.Wrap(err, "ExistsByUsername")
+		}
+		if exists {
+			http.Error(req.Writer, fmt.Sprintf("Username %q already exists", username), http.StatusConflict)
+			return errors.New("username exists")
+		}
+	}
+
+	// Update user fields
+	existingUser.DisplayName = displayName
+	existingUser.UserName = username
+	if password != "" {
+		// In a real application, hash the password before storing it
+		// existingUser.HashedPassword = hashPassword(password)
+	}
+	existingUser.UpdatedAt = time.Now()
+
+	err = req.DB.Users.Update(req.Context.Context, existingUser)
+	if err != nil {
+		return errors.Wrap(err, "Update user")
+	}
+
+	log.Printf("Updated user with ID %d", userID)
+	return nil
+}
+
 func usersTable(users []*foundation.User) html.Block {
 	var rows html.Blocks
 	for _, u := range users {
@@ -106,6 +177,9 @@ func usersTable(users []*foundation.User) html.Block {
 					html.Th(nil,
 						html.Text("Updated"),
 					),
+					html.Th(nil,
+						html.Text("Actions"),
+					),
 				),
 			),
 			html.Tbody(nil,
@@ -131,6 +205,11 @@ func userTableRow(user *foundation.User) html.Block {
 		),
 		html.Td(attr.Class("text-right"),
 			html.Text(user.UpdatedAt.Format("2006-01-02 15:04:05.000")),
+		),
+		html.Td(nil,
+			html.Button(attr.Type("button").Attr("onclick", fmt.Sprintf("document.getElementById('edit-user-dialog-%d').showModal()", user.ID)).Class("btn-ghost"),
+				html.Text("Edit"),
+			),
 		),
 	)
 }
@@ -176,6 +255,67 @@ func newUserForm() html.Block {
 							),
 							html.Button(attr.Type("submit").Class("btn"),
 								html.Text("Create User"),
+							),
+						),
+					),
+				),
+				html.Button(attr.Type("button").Attr("aria-label", "Close dialog").Attr("onclick", "this.closest('dialog').close()"),
+					html.Elem("svg", attr.Attr("xmlns", "http://www.w3.org/2000/svg").Width("24").Height("24").Attr("viewbox", "0 0 24 24").Attr("fill", "none").Attr("stroke", "currentColor").Attr("stroke-width", "2").Attr("stroke-linecap", "round").Attr("stroke-linejoin", "round").Class("lucide lucide-x-icon lucide-x"),
+						html.Elem("path", attr.Attr("d", "M18 6 6 18")),
+						html.Elem("path", attr.Attr("d", "m6 6 12 12")),
+					),
+				),
+			),
+		),
+	}
+}
+
+func editUserForms(users []*foundation.User) html.Blocks {
+	var forms html.Blocks
+	for _, user := range users {
+		forms.Add(editUserForm(user))
+	}
+	return forms
+}
+
+func editUserForm(user *foundation.User) html.Block {
+	return html.Blocks{
+		html.Dialog(attr.Id(fmt.Sprintf("edit-user-dialog-%d", user.ID)).Class("dialog w-full sm:max-w-[425px] max-h-[612px]").Attr("aria-labelledby", fmt.Sprintf("edit-user-dialog-title-%d", user.ID)).Attr("aria-describedby", fmt.Sprintf("edit-user-dialog-description-%d", user.ID)).Attr("onclick", "if (event.target === this) this.close()"),
+			html.Article(nil,
+				html.Header(nil,
+					html.H2(attr.Id(fmt.Sprintf("edit-user-dialog-title-%d", user.ID)),
+						html.Text("Edit User"),
+					),
+					html.P(attr.Id(fmt.Sprintf("edit-user-dialog-description-%d", user.ID)),
+						html.Text("Make changes to the user details."),
+					),
+				),
+				html.Section(nil,
+					html.Form(attr.Method("PATCH").Action(fmt.Sprintf("/admin/users/%d", user.ID)).Class("form grid gap-4"),
+						html.Div(attr.Class("grid gap-3"),
+							html.Label(attr.For(fmt.Sprintf("edit-display-name-%d", user.ID)),
+								html.Text("Display Name"),
+							),
+							html.Input(attr.Type("text").Name("display_name").Id(fmt.Sprintf("edit-display-name-%d", user.ID)).Value(user.DisplayName).Required("")),
+						),
+						html.Div(attr.Class("grid gap-3"),
+							html.Label(attr.For(fmt.Sprintf("edit-username-%d", user.ID)),
+								html.Text("Username"),
+							),
+							html.Input(attr.Type("text").Name("username").Id(fmt.Sprintf("edit-username-%d", user.ID)).Value(user.UserName).Required("")),
+						),
+						html.Div(attr.Class("grid gap-3"),
+							html.Label(attr.For(fmt.Sprintf("edit-password-%d", user.ID)),
+								html.Text("New Password (leave empty to keep current)"),
+							),
+							html.Input(attr.Type("password").Name("password").Id(fmt.Sprintf("edit-password-%d", user.ID))),
+						),
+						html.Div(attr.Class("flex justify-end gap-2 mt-4"),
+							html.Button(attr.Type("button").Class("btn-outline").Attr("onclick", "this.closest('dialog').close()"),
+								html.Text("Cancel"),
+							),
+							html.Button(attr.Type("submit").Class("btn"),
+								html.Text("Update User"),
 							),
 						),
 					),
