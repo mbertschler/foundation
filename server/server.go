@@ -54,8 +54,13 @@ func (s *Server) setupGeneralRoutes() error {
 func (s *Server) start() error {
 	hostPort := s.ctx.Config.HostPort
 	log.Printf("starting server on http://%s", hostPort)
+	c := make(chan bool)
 	go func() {
+		c <- true
 		http.ListenAndServe(hostPort, s.router)
 	}()
+	// hack to make sure the server goroutine is started
+	// otherwise we could get "all goroutines are asleep - deadlock!"
+	<-c
 	return nil
 }

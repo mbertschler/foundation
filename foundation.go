@@ -3,6 +3,7 @@ package foundation
 import (
 	"context"
 	"net/http"
+	"time"
 
 	"github.com/julienschmidt/httprouter"
 	"github.com/uptrace/bun"
@@ -36,7 +37,10 @@ type UserDB interface {
 type User struct {
 	bun.BaseModel `bun:"table:users,alias:u"`
 
-	ID          int64  `bun:"id,pk,autoincrement"`
-	DisplayName string `bun:"display_name,notnull"`
-	UserName    string `bun:"user_name,unique"`
+	ID             int64     `bun:"id,pk,autoincrement"`
+	DisplayName    string    `bun:"display_name,notnull"`
+	UserName       string    `bun:"user_name,unique"`
+	HashedPassword string    `bun:"hashed_password,notnull"`
+	CreatedAt      time.Time `bun:"created_at,nullzero,notnull"`
+	UpdatedAt      time.Time `bun:"updated_at,nullzero,notnull"`
 }

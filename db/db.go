@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 
 	"github.com/mbertschler/foundation"
+	"github.com/mbertschler/foundation/db/migrations"
 	"github.com/pkg/errors"
 	"github.com/uptrace/bun"
 	"github.com/uptrace/bun/dialect/sqlitedialect"
@@ -41,10 +42,19 @@ func StartDB(context *foundation.Context) (*foundation.DB, error) {
 		bundebug.WithVerbose(true),
 	))
 
-	// Create table
-	_, err = db.NewCreateTable().Model((*foundation.User)(nil)).IfNotExists().Exec(ctx)
+	// Initialize and run migrations
+	migrator := migrations.NewMigrator(db)
+
+	// Initialize migration table if it doesn't exist
+	err = migrator.Init(ctx)
 	if err != nil {
-		return nil, errors.Wrap(err, "create table")
+		return nil, errors.Wrap(err, "init migrations")
+	}
+
+	// Run migrations
+	err = migrator.Migrate(ctx)
+	if err != nil {
+		return nil, errors.Wrap(err, "run migrations")
 	}
 
 	fdb := &foundation.DB{
