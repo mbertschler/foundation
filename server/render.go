@@ -10,23 +10,48 @@ import (
 	"github.com/mbertschler/html"
 )
 
-func (s *Server) renderPage(ctx *foundation.Context, fn pages.RenderFunc) httprouter.Handle {
+func (s *Server) renderPage(ctx *foundation.Context, fn pages.PageFunc) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 		req := &foundation.Request{
 			Context: ctx,
-			Params:  params,
+			Writer:  w,
 			Request: r,
+			Params:  params,
 		}
 
 		page, err := fn(req)
 		if err != nil {
-			log.Println("RenderFunc error:", err)
+			log.Println("PageFunc error:", err)
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		err = html.Render(w, page.RenderHTML())
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
+	}
+}
+
+func (s *Server) renderFrame(ctx *foundation.Context, fn pages.FrameFunc) httprouter.Handle {
+	return func(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
+		req := &foundation.Request{
+			Context: ctx,
+			Writer:  w,
+			Request: r,
+			Params:  params,
+		}
+
+		frame, err := fn(req)
+		if err != nil {
+			log.Println("FrameFunc error:", err)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		err = html.Render(w, frame)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}

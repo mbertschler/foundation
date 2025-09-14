@@ -1,0 +1,192 @@
+package pages
+
+import (
+	"fmt"
+	"log"
+	"net/http"
+	"time"
+
+	"github.com/mbertschler/foundation"
+	"github.com/mbertschler/html"
+	"github.com/mbertschler/html/attr"
+	"github.com/pkg/errors"
+)
+
+func UsersFrame(req *foundation.Request) (html.Block, error) {
+	if req.Request.Method == http.MethodPost {
+		err := postNewUser(req)
+		if err != nil {
+			return nil, errors.Wrap(err, "postNewUser")
+		}
+	}
+
+	allUsers, err := req.DB.Users.All(req.Context.Context)
+	if err != nil {
+		return nil, errors.Wrap(err, "All users")
+	}
+
+	return html.Elem("turbo-frame", attr.Id("users-frame"),
+		html.Div(attr.Class("p-4 md:p-6 xl:p-12"),
+			html.Main(attr.Class("mx-auto relative w-full max-w-screen-lg gap-10"),
+				html.H2(attr.Class("mx-auto max-w-screen-lg text-2xl font-bold pb-4"), html.Text("All Users")),
+				usersTable(allUsers),
+				newUserForm(),
+			),
+		),
+	), nil
+}
+
+func postNewUser(req *foundation.Request) error {
+	r := req.Request
+	err := r.ParseForm()
+	if err != nil {
+		http.Error(req.Writer, "Failed to parse form", http.StatusBadRequest)
+		return errors.Wrap(err, "ParseForm")
+	}
+
+	displayName := r.FormValue("display_name")
+	username := r.FormValue("username")
+	password := r.FormValue("password")
+
+	log.Printf("Received new user data:")
+	log.Printf("Display Name: %s", displayName)
+	log.Printf("Username: %s", username)
+	log.Printf("Password: %s", password)
+
+	exists, err := req.DB.Users.ExistsByUsername(req.Context.Context, username)
+	if err != nil {
+		return errors.Wrap(err, "ExistsByUsername")
+	}
+	if exists {
+		http.Error(req.Writer, fmt.Sprintf("Username %q already exists", username), http.StatusConflict)
+		return errors.New("username exists")
+	}
+
+	user := &foundation.User{
+		DisplayName: displayName,
+		UserName:    username,
+		// HashedPassword: password, // In a real application, hash the password before storing it
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+	}
+	err = req.DB.Users.Insert(req.Context, user)
+	if err != nil {
+		return errors.Wrap(err, "Insert user")
+	}
+
+	log.Printf("Inserted new user with ID %d", user.ID)
+	return nil
+}
+
+func usersTable(users []*foundation.User) html.Block {
+	var rows html.Blocks
+	for _, u := range users {
+		rows.Add(userTableRow(u))
+	}
+
+	return html.Div(attr.Class("overflow-x-auto w-full"),
+		html.Table(attr.Class("table"),
+			html.Caption(nil,
+				html.Text("All known users. Rendered at "+fmt.Sprint(time.Now().Format("15:04:05.000"))),
+			),
+			html.Thead(nil,
+				html.Tr(nil,
+					html.Th(nil,
+						html.Text("ID"),
+					),
+					html.Th(nil,
+						html.Text("Display Name"),
+					),
+					html.Th(nil,
+						html.Text("User Name"),
+					),
+					html.Th(nil,
+						html.Text("Created"),
+					),
+					html.Th(nil,
+						html.Text("Updated"),
+					),
+				),
+			),
+			html.Tbody(nil,
+				rows,
+			),
+		),
+	)
+}
+
+func userTableRow(user *foundation.User) html.Block {
+	return html.Tr(nil,
+		html.Td(attr.Class("font-medium"),
+			html.Text(fmt.Sprint(user.ID)),
+		),
+		html.Td(nil,
+			html.Text(user.DisplayName),
+		),
+		html.Td(nil,
+			html.Text(user.UserName),
+		),
+		html.Td(attr.Class("text-right"),
+			html.Text(user.CreatedAt.Format("2006-01-02 15:04:05.000")),
+		),
+		html.Td(attr.Class("text-right"),
+			html.Text(user.UpdatedAt.Format("2006-01-02 15:04:05.000")),
+		),
+	)
+}
+
+func newUserForm() html.Block {
+	return html.Blocks{
+		html.Button(attr.Type("button").Attr("onclick", "document.getElementById('new-user-dialog').showModal()").Class("btn-outline"),
+			html.Text("Add New User"),
+		),
+		html.Dialog(attr.Id("new-user-dialog").Class("dialog w-full sm:max-w-[425px] max-h-[612px]").Attr("aria-labelledby", "new-user-dialog-title").Attr("aria-describedby", "new-user-dialog-description").Attr("onclick", "if (event.target === this) this.close()"),
+			html.Article(nil,
+				html.Header(nil,
+					html.H2(attr.Id("new-user-dialog-title"),
+						html.Text("Add New User"),
+					),
+					html.P(attr.Id("new-user-dialog-description"),
+						html.Text("Enter the details for the new user."),
+					),
+				),
+				html.Section(nil,
+					html.Form(attr.Method("POST").Action("/admin/users").Class("form grid gap-4"),
+						html.Div(attr.Class("grid gap-3"),
+							html.Label(attr.For("display-name"),
+								html.Text("Display Name"),
+							),
+							html.Input(attr.Type("text").Name("display_name").Id("display-name").Required("").Autofocus("")),
+						),
+						html.Div(attr.Class("grid gap-3"),
+							html.Label(attr.For("username"),
+								html.Text("Username"),
+							),
+							html.Input(attr.Type("text").Name("username").Id("username").Required("")),
+						),
+						html.Div(attr.Class("grid gap-3"),
+							html.Label(attr.For("password"),
+								html.Text("Password"),
+							),
+							html.Input(attr.Type("password").Name("password").Id("password").Required("")),
+						),
+						html.Div(attr.Class("flex justify-end gap-2 mt-4"),
+							html.Button(attr.Type("button").Class("btn-outline").Attr("onclick", "this.closest('dialog').close()"),
+								html.Text("Cancel"),
+							),
+							html.Button(attr.Type("submit").Class("btn"),
+								html.Text("Create User"),
+							),
+						),
+					),
+				),
+				html.Button(attr.Type("button").Attr("aria-label", "Close dialog").Attr("onclick", "this.closest('dialog').close()"),
+					html.Elem("svg", attr.Attr("xmlns", "http://www.w3.org/2000/svg").Width("24").Height("24").Attr("viewbox", "0 0 24 24").Attr("fill", "none").Attr("stroke", "currentColor").Attr("stroke-width", "2").Attr("stroke-linecap", "round").Attr("stroke-linejoin", "round").Class("lucide lucide-x-icon lucide-x"),
+						html.Elem("path", attr.Attr("d", "M18 6 6 18")),
+						html.Elem("path", attr.Attr("d", "m6 6 12 12")),
+					),
+				),
+			),
+		),
+	}
+}

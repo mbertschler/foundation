@@ -10,13 +10,14 @@ import (
 )
 
 type Context struct {
-	Context context.Context
-	Config  *Config
-	DB      *DB
+	context.Context
+	Config *Config
+	DB     *DB
 }
 
 type Request struct {
 	*Context
+	Writer  http.ResponseWriter
 	Request *http.Request
 	Params  httprouter.Params
 }

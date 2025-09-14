@@ -11,7 +11,8 @@ import (
 	"github.com/mbertschler/html/attr"
 )
 
-type RenderFunc func(*foundation.Request) (*Page, error)
+type PageFunc func(*foundation.Request) (*Page, error)
+type FrameFunc func(*foundation.Request) (html.Block, error)
 
 type Page struct {
 	Title string
