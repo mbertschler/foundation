@@ -38,9 +38,9 @@ func UsersFrame(req *foundation.Request) (html.Block, error) {
 				html.H2(attr.Class("mx-auto max-w-screen-lg text-2xl font-bold pb-4"), html.Text("All Users")),
 				usersTable(allUsers),
 				newUserForm(),
-				editUserForms(allUsers),
 			),
 		),
+		html.Elem("turbo-frame", attr.Id("user-dialog-frame")),
 	), nil
 }
 
@@ -207,7 +207,7 @@ func userTableRow(user *foundation.User) html.Block {
 			html.Text(user.UpdatedAt.Format("2006-01-02 15:04:05.000")),
 		),
 		html.Td(nil,
-			html.Button(attr.Type("button").Attr("onclick", fmt.Sprintf("document.getElementById('edit-user-dialog-%d').showModal()", user.ID)).Class("btn-ghost"),
+			html.A(attr.Href(fmt.Sprintf("/admin/frame/users/update/%d", user.ID)).Class("btn-ghost").Attr("data-turbo-frame", "user-dialog-frame"),
 				html.Text("Edit"),
 			),
 		),
@@ -216,9 +216,14 @@ func userTableRow(user *foundation.User) html.Block {
 
 func newUserForm() html.Block {
 	return html.Blocks{
-		html.Button(attr.Type("button").Attr("onclick", "document.getElementById('new-user-dialog').showModal()").Class("btn-outline"),
+		html.A(attr.Href("/admin/frame/users/new").Class("btn-outline").Attr("data-turbo-frame", "user-dialog-frame"),
 			html.Text("Add New User"),
 		),
+	}
+}
+
+func UserNewFrame(req *foundation.Request) (html.Block, error) {
+	return html.Elem("turbo-frame", attr.Id("user-dialog-frame"),
 		html.Dialog(attr.Id("new-user-dialog").Class("dialog w-full sm:max-w-[425px] max-h-[612px]").Attr("aria-labelledby", "new-user-dialog-title").Attr("aria-describedby", "new-user-dialog-description").Attr("onclick", "if (event.target === this) this.close()"),
 			html.Article(nil,
 				html.Header(nil,
@@ -230,7 +235,7 @@ func newUserForm() html.Block {
 					),
 				),
 				html.Section(nil,
-					html.Form(attr.Method("POST").Action("/admin/users").Class("form grid gap-4"),
+					html.Form(attr.Method("POST").Action("/admin/users").Class("form grid gap-4").Attr("data-turbo-frame", "users-frame"),
 						html.Div(attr.Class("grid gap-3"),
 							html.Label(attr.For("display-name"),
 								html.Text("Display Name"),
@@ -267,19 +272,28 @@ func newUserForm() html.Block {
 				),
 			),
 		),
-	}
+		html.Script(nil, html.JS("document.getElementById('new-user-dialog').showModal();")),
+	), nil
 }
 
-func editUserForms(users []*foundation.User) html.Blocks {
-	var forms html.Blocks
-	for _, user := range users {
-		forms.Add(editUserForm(user))
+func UserUpdateFrame(req *foundation.Request) (html.Block, error) {
+	userIDStr := req.Params.ByName("id")
+	if userIDStr == "" {
+		return nil, errors.New("user ID is required")
 	}
-	return forms
-}
 
-func editUserForm(user *foundation.User) html.Block {
-	return html.Blocks{
+	var userID int64
+	_, err := fmt.Sscanf(userIDStr, "%d", &userID)
+	if err != nil {
+		return nil, errors.Wrap(err, "invalid user ID")
+	}
+
+	user, err := req.DB.Users.ByID(req.Context.Context, userID)
+	if err != nil {
+		return nil, errors.Wrap(err, "user not found")
+	}
+
+	return html.Elem("turbo-frame", attr.Id("user-dialog-frame"),
 		html.Dialog(attr.Id(fmt.Sprintf("edit-user-dialog-%d", user.ID)).Class("dialog w-full sm:max-w-[425px] max-h-[612px]").Attr("aria-labelledby", fmt.Sprintf("edit-user-dialog-title-%d", user.ID)).Attr("aria-describedby", fmt.Sprintf("edit-user-dialog-description-%d", user.ID)).Attr("onclick", "if (event.target === this) this.close()"),
 			html.Article(nil,
 				html.Header(nil,
@@ -291,7 +305,7 @@ func editUserForm(user *foundation.User) html.Block {
 					),
 				),
 				html.Section(nil,
-					html.Form(attr.Method("PATCH").Action(fmt.Sprintf("/admin/users/%d", user.ID)).Class("form grid gap-4"),
+					html.Form(attr.Method("PATCH").Action(fmt.Sprintf("/admin/users/%d", user.ID)).Class("form grid gap-4").Attr("data-turbo-frame", "users-frame"),
 						html.Div(attr.Class("grid gap-3"),
 							html.Label(attr.For(fmt.Sprintf("edit-display-name-%d", user.ID)),
 								html.Text("Display Name"),
@@ -328,5 +342,6 @@ func editUserForm(user *foundation.User) html.Block {
 				),
 			),
 		),
-	}
+		html.Script(nil, html.JS(fmt.Sprintf("document.getElementById('edit-user-dialog-%d').showModal();", user.ID))),
+	), nil
 }
