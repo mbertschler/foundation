@@ -40,6 +40,7 @@ func (s *Server) setupPageRoutes() {
 	s.router.GET("/admin/frame/users/update/:id", s.renderFrame(s.ctx, pages.UserUpdateFrame))
 	s.router.POST("/admin/users", s.renderFrame(s.ctx, pages.UsersFrame))
 	s.router.PATCH("/admin/users/:id", s.renderFrame(s.ctx, pages.UsersFrame))
+	s.router.DELETE("/admin/users/:id", s.renderFrame(s.ctx, pages.UsersFrame))
 }
 
 func (s *Server) setupGeneralRoutes() error {

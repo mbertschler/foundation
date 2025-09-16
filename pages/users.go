@@ -7,13 +7,13 @@ import (
 	"time"
 
 	"github.com/mbertschler/foundation"
+	"github.com/mbertschler/foundation/pages/components"
 	"github.com/mbertschler/html"
 	"github.com/mbertschler/html/attr"
 	"github.com/pkg/errors"
 )
 
 func UsersFrame(req *foundation.Request) (html.Block, error) {
-
 	switch req.Request.Method {
 	case http.MethodPost:
 		err := postNewUser(req)
@@ -24,6 +24,12 @@ func UsersFrame(req *foundation.Request) (html.Block, error) {
 		err := patchUser(req)
 		if err != nil {
 			return nil, errors.Wrap(err, "patchUser")
+		}
+	case http.MethodDelete:
+		log.Println("DELETE user request")
+		err := deleteUser(req)
+		if err != nil {
+			return nil, errors.Wrap(err, "deleteUser")
 		}
 	}
 
@@ -146,6 +152,38 @@ func patchUser(req *foundation.Request) error {
 	}
 
 	log.Printf("Updated user with ID %d", userID)
+	return nil
+}
+
+func deleteUser(req *foundation.Request) error {
+	// Extract user ID from URL path
+	userIDStr := req.Params.ByName("id")
+	if userIDStr == "" {
+		http.Error(req.Writer, "User ID is required", http.StatusBadRequest)
+		return errors.New("missing user ID")
+	}
+
+	var userID int64
+	_, err := fmt.Sscanf(userIDStr, "%d", &userID)
+	if err != nil {
+		http.Error(req.Writer, "Invalid user ID", http.StatusBadRequest)
+		return errors.Wrap(err, "invalid user ID")
+	}
+
+	// Check if user exists
+	_, err = req.DB.Users.ByID(req.Context.Context, userID)
+	if err != nil {
+		http.Error(req.Writer, "User not found", http.StatusNotFound)
+		return errors.Wrap(err, "user not found")
+	}
+
+	// Delete user
+	err = req.DB.Users.Delete(req.Context.Context, userID)
+	if err != nil {
+		return errors.Wrap(err, "Delete user")
+	}
+
+	log.Printf("Deleted user with ID %d", userID)
 	return nil
 }
 
@@ -305,6 +343,7 @@ func UserUpdateFrame(req *foundation.Request) (html.Block, error) {
 					),
 				),
 				html.Section(nil,
+					html.Form(attr.Id("delete-user").Method("DELETE").Action(fmt.Sprintf("/admin/users/%d", user.ID)).Attr("data-turbo-frame", "users-frame")), //.Attr("onsubmit", "this.closest('dialog').close(); return true;"),
 					html.Form(attr.Method("PATCH").Action(fmt.Sprintf("/admin/users/%d", user.ID)).Class("form grid gap-4").Attr("data-turbo-frame", "users-frame"),
 						html.Div(attr.Class("grid gap-3"),
 							html.Label(attr.For(fmt.Sprintf("edit-display-name-%d", user.ID)),
@@ -324,12 +363,27 @@ func UserUpdateFrame(req *foundation.Request) (html.Block, error) {
 							),
 							html.Input(attr.Type("password").Name("password").Id(fmt.Sprintf("edit-password-%d", user.ID))),
 						),
-						html.Div(attr.Class("flex justify-end gap-2 mt-4"),
-							html.Button(attr.Type("button").Class("btn-outline").Attr("onclick", "this.closest('dialog').close()"),
-								html.Text("Cancel"),
-							),
-							html.Button(attr.Type("submit").Class("btn"),
-								html.Text("Update User"),
+						html.Div(attr.Class("flex justify-between items-center mt-4"),
+							components.Dropdown{
+								Id:          "delete-user",
+								ButtonText:  "Delete User",
+								ButtonClass: "btn-destructive",
+								Items: html.Blocks{
+									html.Div(attr.Role("menuitem"),
+										html.Text("Cancel"),
+									),
+									html.Button(attr.Form("delete-user").Type("submit").Role("menuitem").Class("text-destructive font-bold hover:bg-destructive/10"),
+										html.Text("Confirm Delete"),
+									),
+								},
+							},
+							html.Div(attr.Class("flex gap-2"),
+								html.Button(attr.Type("button").Class("btn-outline").Attr("onclick", "this.closest('dialog').close()"),
+									html.Text("Cancel"),
+								),
+								html.Button(attr.Type("submit").Class("btn"),
+									html.Text("Update User"),
+								),
 							),
 						),
 					),
