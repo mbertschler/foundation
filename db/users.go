@@ -9,6 +9,8 @@ import (
 	"github.com/uptrace/bun"
 )
 
+var nilUser *foundation.User
+
 type usersDB struct {
 	db *bun.DB
 }
@@ -56,7 +58,7 @@ func (u *usersDB) Update(ctx context.Context, user *foundation.User) error {
 }
 
 func (u *usersDB) Delete(ctx context.Context, userID int64) error {
-	_, err := u.db.NewDelete().Model((*foundation.User)(nil)).Where("id = ?", userID).Exec(ctx)
+	_, err := u.db.NewDelete().Model(nilUser).Where("id = ?", userID).Exec(ctx)
 	return err
 }
 

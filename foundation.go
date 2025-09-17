@@ -2,6 +2,7 @@ package foundation
 
 import (
 	"context"
+	"database/sql"
 	"net/http"
 	"time"
 
@@ -23,7 +24,8 @@ type Request struct {
 }
 
 type DB struct {
-	Users UserDB
+	Users    UserDB
+	Sessions SessionDB
 }
 
 type UserDB interface {
@@ -36,6 +38,13 @@ type UserDB interface {
 	All(ctx context.Context) ([]*User, error)
 }
 
+type SessionDB interface {
+	Create(ctx context.Context, session *Session) error
+	Get(ctx context.Context, sessionID string) (*Session, error)
+	Delete(ctx context.Context, sessionID string) error
+	DeleteExpired(ctx context.Context) error
+}
+
 type User struct {
 	bun.BaseModel `bun:"table:users,alias:u"`
 
@@ -45,4 +54,13 @@ type User struct {
 	HashedPassword string    `bun:"hashed_password,notnull"`
 	CreatedAt      time.Time `bun:"created_at,nullzero,notnull"`
 	UpdatedAt      time.Time `bun:"updated_at,nullzero,notnull"`
+}
+
+type Session struct {
+	bun.BaseModel `bun:"table:sessions,alias:s"`
+
+	ID        string        `bun:"id,pk"`
+	UserID    sql.NullInt64 `bun:"user_id"`
+	CreatedAt time.Time     `bun:"created_at,nullzero,notnull"`
+	ExpiresAt time.Time     `bun:"expires_at,nullzero,notnull"`
 }

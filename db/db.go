@@ -61,6 +61,9 @@ func StartDB(context *foundation.Context) (*foundation.DB, error) {
 		Users: &usersDB{
 			db: db,
 		},
+		Sessions: &sessionsDB{
+			db: db,
+		},
 	}
 
 	return fdb, nil
