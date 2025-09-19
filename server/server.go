@@ -34,7 +34,8 @@ func RunServer(ctx *foundation.Context) error {
 }
 
 func (s *Server) setupPageRoutes() {
-	s.router.GET("/", s.renderPage(s.ctx, pages.IndexPage))
+	s.router.Handler("GET", "/", http.RedirectHandler("/admin", http.StatusFound))
+	s.router.GET("/admin", s.renderPage(s.ctx, pages.IndexPage))
 	// s.router.GET("/admin/frame/users", s.renderFrame(s.ctx, pages.UsersFrame))
 	s.router.GET("/admin/frame/users/new", s.renderFrame(s.ctx, pages.UserNewFrame))
 	s.router.GET("/admin/frame/users/update/:id", s.renderFrame(s.ctx, pages.UserUpdateFrame))

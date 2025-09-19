@@ -21,6 +21,9 @@ type Request struct {
 	Writer  http.ResponseWriter
 	Request *http.Request
 	Params  httprouter.Params
+
+	Session *Session
+	User    *User
 }
 
 type DB struct {

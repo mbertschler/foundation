@@ -12,7 +12,7 @@ const (
 
 func GetOrCreateSession(r *foundation.Request) (*foundation.Session, error) {
 	session, err := getSessionFromRequest(r)
-	if err != nil {
+	if err != nil && err != http.ErrNoCookie {
 		return nil, err
 	}
 	if session != nil {
