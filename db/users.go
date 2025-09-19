@@ -9,7 +9,11 @@ import (
 	"github.com/uptrace/bun"
 )
 
-var nilUser *foundation.User
+var (
+	nilUser *foundation.User
+
+	_ foundation.UserDB = (*usersDB)(nil)
+)
 
 type usersDB struct {
 	db *bun.DB

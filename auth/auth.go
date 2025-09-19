@@ -1,4 +1,4 @@
-package foundation
+package auth
 
 import (
 	"crypto/rand"
@@ -37,8 +37,8 @@ func HashPassword(password string) (string, error) {
 		timeCost, memoryCost, parallelism, saltB64, hashB64), nil
 }
 
-// VerifyPassword verifies a password against a hash
-func VerifyPassword(password, hash string) (bool, error) {
+// verifyPassword verifies a password against a hash
+func verifyPassword(password, hash string) (bool, error) {
 	parts := strings.Split(hash, "$")
 	if len(parts) != 5 {
 		return false, fmt.Errorf("invalid hash format")

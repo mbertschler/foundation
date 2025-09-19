@@ -39,10 +39,10 @@ type UserDB interface {
 }
 
 type SessionDB interface {
-	Create(ctx context.Context, session *Session) error
-	Get(ctx context.Context, sessionID string) (*Session, error)
+	InsertUserSession(ctx context.Context, userID int64) (*Session, error)
+	InsertAnonymousSession(ctx context.Context) (*Session, error)
+	ByID(ctx context.Context, sessionID string) (*Session, error)
 	Delete(ctx context.Context, sessionID string) error
-	DeleteExpired(ctx context.Context) error
 }
 
 type User struct {

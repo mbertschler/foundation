@@ -1,21 +1,21 @@
-package foundation
+package auth
 
 import (
 	"strings"
 	"testing"
 )
 
-func TestHashPassword(t *testing.T) {
+func TesthashPassword(t *testing.T) {
 	password := "testpassword123"
 
 	hash, err := HashPassword(password)
 	if err != nil {
-		t.Fatalf("HashPassword failed: %v", err)
+		t.Fatalf("hashPassword failed: %v", err)
 	}
 
 	// Check that hash is not empty
 	if hash == "" {
-		t.Error("HashPassword returned empty string")
+		t.Error("hashPassword returned empty string")
 	}
 
 	// Check hash format
@@ -56,35 +56,35 @@ func TestHashPassword(t *testing.T) {
 	}
 }
 
-func TestVerifyPassword(t *testing.T) {
+func TestverifyPassword(t *testing.T) {
 	password := "testpassword123"
 	wrongPassword := "wrongpassword"
 
 	hash, err := HashPassword(password)
 	if err != nil {
-		t.Fatalf("HashPassword failed: %v", err)
+		t.Fatalf("hashPassword failed: %v", err)
 	}
 
 	// Test correct password
-	valid, err := VerifyPassword(password, hash)
+	valid, err := verifyPassword(password, hash)
 	if err != nil {
-		t.Fatalf("VerifyPassword failed: %v", err)
+		t.Fatalf("verifyPassword failed: %v", err)
 	}
 	if !valid {
-		t.Error("VerifyPassword should return true for correct password")
+		t.Error("verifyPassword should return true for correct password")
 	}
 
 	// Test wrong password
-	valid, err = VerifyPassword(wrongPassword, hash)
+	valid, err = verifyPassword(wrongPassword, hash)
 	if err != nil {
-		t.Fatalf("VerifyPassword failed: %v", err)
+		t.Fatalf("verifyPassword failed: %v", err)
 	}
 	if valid {
-		t.Error("VerifyPassword should return false for wrong password")
+		t.Error("verifyPassword should return false for wrong password")
 	}
 }
 
-func TestVerifyPasswordInvalidFormats(t *testing.T) {
+func TestverifyPasswordInvalidFormats(t *testing.T) {
 	password := "testpassword"
 
 	testCases := []struct {
@@ -104,7 +104,7 @@ func TestVerifyPasswordInvalidFormats(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			valid, err := VerifyPassword(password, tc.hash)
+			valid, err := verifyPassword(password, tc.hash)
 			if err == nil {
 				t.Errorf("Expected error for invalid hash format: %s", tc.name)
 			}
@@ -121,12 +121,12 @@ func TestPasswordHashingConsistency(t *testing.T) {
 	// Generate multiple hashes for the same password
 	hash1, err := HashPassword(password)
 	if err != nil {
-		t.Fatalf("First HashPassword failed: %v", err)
+		t.Fatalf("First hashPassword failed: %v", err)
 	}
 
 	hash2, err := HashPassword(password)
 	if err != nil {
-		t.Fatalf("Second HashPassword failed: %v", err)
+		t.Fatalf("Second hashPassword failed: %v", err)
 	}
 
 	// Hashes should be different due to different salts
@@ -135,17 +135,17 @@ func TestPasswordHashingConsistency(t *testing.T) {
 	}
 
 	// But both should verify the same password
-	valid1, err := VerifyPassword(password, hash1)
+	valid1, err := verifyPassword(password, hash1)
 	if err != nil {
-		t.Fatalf("VerifyPassword for hash1 failed: %v", err)
+		t.Fatalf("verifyPassword for hash1 failed: %v", err)
 	}
 	if !valid1 {
 		t.Error("hash1 should verify the password")
 	}
 
-	valid2, err := VerifyPassword(password, hash2)
+	valid2, err := verifyPassword(password, hash2)
 	if err != nil {
-		t.Fatalf("VerifyPassword for hash2 failed: %v", err)
+		t.Fatalf("verifyPassword for hash2 failed: %v", err)
 	}
 	if !valid2 {
 		t.Error("hash2 should verify the password")
@@ -156,12 +156,12 @@ func TestEdgeCases(t *testing.T) {
 	// Test empty password
 	hash, err := HashPassword("")
 	if err != nil {
-		t.Fatalf("HashPassword failed for empty password: %v", err)
+		t.Fatalf("hashPassword failed for empty password: %v", err)
 	}
 
-	valid, err := VerifyPassword("", hash)
+	valid, err := verifyPassword("", hash)
 	if err != nil {
-		t.Fatalf("VerifyPassword failed for empty password: %v", err)
+		t.Fatalf("verifyPassword failed for empty password: %v", err)
 	}
 	if !valid {
 		t.Error("Empty password should verify correctly")
@@ -171,12 +171,12 @@ func TestEdgeCases(t *testing.T) {
 	longPassword := strings.Repeat("a", 1000)
 	hash, err = HashPassword(longPassword)
 	if err != nil {
-		t.Fatalf("HashPassword failed for long password: %v", err)
+		t.Fatalf("hashPassword failed for long password: %v", err)
 	}
 
-	valid, err = VerifyPassword(longPassword, hash)
+	valid, err = verifyPassword(longPassword, hash)
 	if err != nil {
-		t.Fatalf("VerifyPassword failed for long password: %v", err)
+		t.Fatalf("verifyPassword failed for long password: %v", err)
 	}
 	if !valid {
 		t.Error("Long password should verify correctly")

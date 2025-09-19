@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/mbertschler/foundation"
+	"github.com/mbertschler/foundation/auth"
 	"github.com/mbertschler/foundation/pages/components"
 	"github.com/mbertschler/html"
 	"github.com/mbertschler/html/attr"
@@ -76,12 +77,17 @@ func postNewUser(req *foundation.Request) error {
 		return errors.New("username exists")
 	}
 
+	hashedPassword, err := auth.HashPassword(password)
+	if err != nil {
+		return errors.Wrap(err, "HashPassword")
+	}
+
 	user := &foundation.User{
-		DisplayName: displayName,
-		UserName:    username,
-		// HashedPassword: password, // In a real application, hash the password before storing it
-		CreatedAt: time.Now(),
-		UpdatedAt: time.Now(),
+		DisplayName:    displayName,
+		UserName:       username,
+		HashedPassword: hashedPassword,
+		CreatedAt:      time.Now(),
+		UpdatedAt:      time.Now(),
 	}
 	err = req.DB.Users.Insert(req.Context, user)
 	if err != nil {
@@ -141,8 +147,11 @@ func patchUser(req *foundation.Request) error {
 	existingUser.DisplayName = displayName
 	existingUser.UserName = username
 	if password != "" {
-		// In a real application, hash the password before storing it
-		// existingUser.HashedPassword = hashPassword(password)
+		hashedPassword, err := auth.HashPassword(password)
+		if err != nil {
+			return errors.Wrap(err, "HashPassword")
+		}
+		existingUser.HashedPassword = hashedPassword
 	}
 	existingUser.UpdatedAt = time.Now()
 
