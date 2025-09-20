@@ -2,6 +2,7 @@ package server
 
 import (
 	"crypto/subtle"
+	"errors"
 	"log"
 	"net/http"
 
@@ -66,6 +67,10 @@ func (s *Server) renderFrame(ctx *foundation.Context, fn pages.FrameFunc) httpro
 		}
 
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+
+		// in case token was rotated, also make it available to frames and streams
+		w.Header().Set("X-CSRF-Token", req.CSRFToken())
+
 		err = html.Render(w, block)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -87,16 +92,21 @@ func requiresCSRFProtection(method string) bool {
 func verifyCSRFToken(req *foundation.Request) error {
 	token := req.Request.Header.Get("X-CSRF-TOKEN")
 	if token == "" {
-		return http.ErrNoCookie // or a custom error
+		return errors.New("missing CSRF token header")
 	}
 
 	expectedToken := req.CSRFToken()
 	if expectedToken == "" {
-		return http.ErrNoCookie
+		return errors.New("no session")
+	}
+
+	previousToken := req.PreviousCSRFToken()
+	if previousToken != "" {
+		expectedToken = previousToken
 	}
 
 	if subtle.ConstantTimeCompare([]byte(token), []byte(expectedToken)) != 1 {
-		return http.ErrNoCookie
+		return errors.New("invalid CSRF token")
 	}
 
 	return nil

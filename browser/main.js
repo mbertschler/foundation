@@ -11,4 +11,20 @@ import "@hotwired/turbo";
 import { setupStimulus } from "./stimulus";
 setupStimulus();
 
-console.log("Hello from Foundation!");
+// CSRF token management for Turbo Frames
+document.addEventListener("turbo:before-fetch-response", (event) => {
+  const csrfToken =
+    event.detail.fetchResponse.response.headers.get("x-csrf-token");
+  if (csrfToken) {
+    updateCSRFMetaTag(csrfToken);
+  }
+});
+
+function updateCSRFMetaTag(token) {
+  const metaTag = document.querySelector('meta[name="csrf-token"]');
+  if (metaTag && metaTag.content !== token) {
+    metaTag.content = token;
+  }
+}
+
+console.log("Hello from Foundation! 🌍");

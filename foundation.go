@@ -22,16 +22,25 @@ type Request struct {
 	Request *http.Request
 	Params  httprouter.Params
 
-	Session *Session
-	User    *User
+	Session         *Session
+	PreviousSession *Session
+	User            *User
 }
 
-// CSRFToken returns the CSRF token for this request's session
+// CSRFToken returns the CSRF token for this request's current session.
 func (r *Request) CSRFToken() string {
 	if r.Session == nil {
 		return ""
 	}
 	return r.Session.CSRFToken
+}
+
+// PreviousCSRFToken returns the CSRF token for the potentially rotated out session.
+func (r *Request) PreviousCSRFToken() string {
+	if r.PreviousSession == nil {
+		return ""
+	}
+	return r.PreviousSession.CSRFToken
 }
 
 type DB struct {

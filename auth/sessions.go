@@ -25,6 +25,7 @@ func GetOrCreateSession(r *foundation.Request) (*foundation.Session, error) {
 			}
 			// If session was rotated, update the cookie
 			if rotatedSession.ID != session.ID {
+				r.PreviousSession = session // keep previous session for CSRF checks
 				setSessionCookie(r.Writer, rotatedSession)
 			}
 			return rotatedSession, nil
