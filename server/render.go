@@ -66,11 +66,10 @@ func (s *Server) renderFrame(ctx *foundation.Context, fn pages.FrameFunc) httpro
 			return
 		}
 
-		w.Header().Set("Content-Type", "text/html; charset=utf-8")
-
 		// in case token was rotated, also make it available to frames and streams
 		w.Header().Set("X-CSRF-Token", req.CSRFToken())
 
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		err = html.Render(w, block)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)

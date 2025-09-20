@@ -77,23 +77,25 @@ func Login(r *foundation.Request) error {
 	return nil
 }
 
-func Logout(r *foundation.Request) (*foundation.Session, error) {
+func Logout(r *foundation.Request) error {
 	session, err := getSessionFromRequest(r)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	if session != nil {
 		err = r.DB.Sessions.Delete(r.Context, session.ID)
 		if err != nil {
-			return nil, err
+			return err
 		}
 	}
 
 	session, err = r.DB.Sessions.InsertAnonymousSession(r.Context)
 	if err != nil {
-		return nil, err
+		return err
 	}
+	r.Session = session
+	r.User = nil
 
 	setSessionCookie(r.Writer, session)
-	return session, nil
+	return nil
 }

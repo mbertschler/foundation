@@ -101,3 +101,16 @@ func loginFrame(err error) html.Block {
 		),
 	)
 }
+
+func LogoutFrame(req *foundation.Request) (html.Block, error) {
+	if req.Request.Method != http.MethodPost {
+		return nil, errors.New("method not allowed")
+	}
+	err := auth.Logout(req)
+	if err != nil {
+		log.Println("logout error:", err)
+		return nil, errors.New("logout failed")
+	}
+	http.Redirect(req.Writer, req.Request, "/admin/login", http.StatusSeeOther)
+	return nil, nil
+}

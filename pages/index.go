@@ -24,8 +24,6 @@ func IndexPage(req *foundation.Request) (*Page, error) {
 	))
 	body.Add(html.Div(attr.Id("toaster").Class("toaster")))
 
-	body.Add(html.H3(attr.Class("text-xl font-bold mt-8 mb-4"), html.Text("Session and User Info")))
-
 	var userText string
 	if req.User != nil {
 		userText = fmt.Sprintf("User: ID %d Username %q Name %q",
@@ -34,10 +32,18 @@ func IndexPage(req *foundation.Request) (*Page, error) {
 		userText = "User: not logged in"
 	}
 
-	body.Add(html.Pre(attr.Class("bg-gray-100 p-4 rounded whitespace-pre-wrap"),
-		html.Text(fmt.Sprintf("Session: ID %q UserID %t %d\n",
-			req.Session.ID, req.Session.UserID.Valid, req.Session.UserID.Int64)),
-		html.Text(userText),
+	body.Add(html.Div(attr.Class("p-4 md:p-6 xl:p-12"),
+		html.H3(attr.Class("text-xl font-bold mt-8 mb-4"), html.Text("Session and User Info")),
+		html.Pre(attr.Class("bg-gray-100 p-4 rounded whitespace-pre-wrap"),
+			html.Text(fmt.Sprintf("Session: ID %q UserID %t %d\n",
+				req.Session.ID, req.Session.UserID.Valid, req.Session.UserID.Int64)),
+			html.Text(userText),
+		),
+		html.Form(attr.Class("mt-8").Method("POST").Action("/admin/logout"),
+			html.Button(attr.Class("btn-primary").Type("submit"),
+				html.Text("Logout"),
+			),
+		),
 	))
 
 	// Add user management frame
