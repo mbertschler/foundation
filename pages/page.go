@@ -19,13 +19,14 @@ type Page struct {
 	Body  html.Block
 }
 
-func (p *Page) RenderHTML() html.Block {
+func (p *Page) RenderHTML(req *foundation.Request) html.Block {
 	return html.Blocks{
 		html.Doctype("html"),
 		html.Html(attr.Lang("en"),
 			html.Head(nil,
 				html.Meta(attr.Charset("utf-8")),
 				html.Meta(attr.Name("viewport").Content("width=device-width, initial-scale=1")),
+				html.Meta(attr.Name("csrf-token").Content(req.CSRFToken())),
 				html.Title(nil, html.Text(p.Title)),
 				html.Link(attr.Href(addRefreshQuery("/dist/main.css")).Rel("stylesheet")),
 				html.Script(attr.Src(addRefreshQuery("/dist/main.js")).Defer(nil)),

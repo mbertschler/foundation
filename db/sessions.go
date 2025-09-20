@@ -13,7 +13,8 @@ import (
 
 var (
 	SessionLength   = 32
-	SessionDuration = 24 * time.Hour
+	CSRFTokenLength = 32
+	SessionDuration = 90 * 24 * time.Hour
 
 	_ foundation.SessionDB = (*sessionsDB)(nil)
 )
@@ -35,7 +36,12 @@ func (s *sessionsDB) InsertAnonymousSession(ctx context.Context) (*foundation.Se
 }
 
 func (s *sessionsDB) insertSession(ctx context.Context, userID sql.NullInt64) (*foundation.Session, error) {
-	sessionID, err := generateSessionID()
+	sessionID, err := generateRandomID(SessionLength)
+	if err != nil {
+		return nil, err
+	}
+
+	csrfToken, err := generateRandomID(CSRFTokenLength)
 	if err != nil {
 		return nil, err
 	}
@@ -45,6 +51,7 @@ func (s *sessionsDB) insertSession(ctx context.Context, userID sql.NullInt64) (*
 		UserID:    userID,
 		CreatedAt: time.Now(),
 		ExpiresAt: time.Now().Add(SessionDuration),
+		CSRFToken: csrfToken,
 	}
 
 	_, err = s.db.NewInsert().Model(session).Exec(ctx)
@@ -90,9 +97,9 @@ func (s *sessionsDB) deleteExpired(ctx context.Context) error {
 	return err
 }
 
-// generateSessionID generates a random session ID
-func generateSessionID() (string, error) {
-	bytes := make([]byte, SessionLength)
+// generateRandomID generates a random ID of the specified length
+func generateRandomID(length int) (string, error) {
+	bytes := make([]byte, length)
 	if _, err := rand.Read(bytes); err != nil {
 		return "", err
 	}

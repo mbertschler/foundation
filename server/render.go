@@ -1,6 +1,7 @@
 package server
 
 import (
+	"crypto/subtle"
 	"log"
 	"net/http"
 
@@ -17,7 +18,7 @@ func (s *Server) renderPage(ctx *foundation.Context, fn pages.PageFunc) httprout
 		if err != nil {
 			return nil, err
 		}
-		return page.RenderHTML(), nil
+		return page.RenderHTML(req), nil
 	})
 }
 
@@ -37,6 +38,15 @@ func (s *Server) renderFrame(ctx *foundation.Context, fn pages.FrameFunc) httpro
 			return
 		}
 		req.Session = sess
+
+		// Verify CSRF token for state-changing requests
+		if requiresCSRFProtection(r.Method) {
+			if err := verifyCSRFToken(req); err != nil {
+				log.Println("CSRF verification failed:", err)
+				http.Error(w, "CSRF token verification failed", http.StatusForbidden)
+				return
+			}
+		}
 
 		if sess.UserID.Valid {
 			user, err := req.DB.Users.ByID(req.Context, sess.UserID.Int64)
@@ -61,4 +71,33 @@ func (s *Server) renderFrame(ctx *foundation.Context, fn pages.FrameFunc) httpro
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
 	}
+}
+
+// requiresCSRFProtection returns true if the HTTP method requires CSRF protection
+func requiresCSRFProtection(method string) bool {
+	switch method {
+	case http.MethodPost, http.MethodPut, http.MethodPatch, http.MethodDelete:
+		return true
+	default:
+		return false
+	}
+}
+
+// verifyCSRFToken verifies the CSRF token from the X-CSRF-TOKEN header
+func verifyCSRFToken(req *foundation.Request) error {
+	token := req.Request.Header.Get("X-CSRF-TOKEN")
+	if token == "" {
+		return http.ErrNoCookie // or a custom error
+	}
+
+	expectedToken := req.CSRFToken()
+	if expectedToken == "" {
+		return http.ErrNoCookie
+	}
+
+	if subtle.ConstantTimeCompare([]byte(token), []byte(expectedToken)) != 1 {
+		return http.ErrNoCookie
+	}
+
+	return nil
 }

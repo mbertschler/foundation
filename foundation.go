@@ -26,6 +26,14 @@ type Request struct {
 	User    *User
 }
 
+// CSRFToken returns the CSRF token for this request's session
+func (r *Request) CSRFToken() string {
+	if r.Session == nil {
+		return ""
+	}
+	return r.Session.CSRFToken
+}
+
 type DB struct {
 	Users    UserDB
 	Sessions SessionDB
@@ -66,4 +74,5 @@ type Session struct {
 	UserID    sql.NullInt64 `bun:"user_id"`
 	CreatedAt time.Time     `bun:"created_at,nullzero,notnull"`
 	ExpiresAt time.Time     `bun:"expires_at,nullzero,notnull"`
+	CSRFToken string        `bun:"csrf_token,nullzero,notnull"`
 }

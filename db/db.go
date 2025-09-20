@@ -56,14 +56,12 @@ func StartDB(context *foundation.Context) (*foundation.DB, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "run migrations")
 	}
+	sessionDB := &sessionsDB{db: db}
+	sessionDB.startCleanup()
 
 	fdb := &foundation.DB{
-		Users: &usersDB{
-			db: db,
-		},
-		Sessions: &sessionsDB{
-			db: db,
-		},
+		Users:    &usersDB{db: db},
+		Sessions: sessionDB,
 	}
 
 	return fdb, nil

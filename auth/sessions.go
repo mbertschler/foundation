@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"database/sql"
 	"net/http"
 
 	"github.com/mbertschler/foundation"
@@ -12,7 +13,7 @@ const (
 
 func GetOrCreateSession(r *foundation.Request) (*foundation.Session, error) {
 	session, err := getSessionFromRequest(r)
-	if err != nil && err != http.ErrNoCookie {
+	if err != nil && err != http.ErrNoCookie && err != sql.ErrNoRows {
 		return nil, err
 	}
 	if session != nil {
