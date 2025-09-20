@@ -12,9 +12,10 @@ import (
 )
 
 var (
-	SessionLength   = 32
-	CSRFTokenLength = 32
-	SessionDuration = 90 * 24 * time.Hour
+	SessionLength           = 32
+	CSRFTokenLength         = 32
+	SessionDuration         = 90 * 24 * time.Hour
+	SessionRotationInterval = 30 * time.Minute
 
 	_ foundation.SessionDB = (*sessionsDB)(nil)
 )
@@ -74,6 +75,65 @@ func (s *sessionsDB) ByID(ctx context.Context, sessionID string) (*foundation.Se
 func (s *sessionsDB) Delete(ctx context.Context, sessionID string) error {
 	_, err := s.db.NewDelete().Model(nilSession).Where("id = ?", sessionID).Exec(ctx)
 	return err
+}
+
+func (s *sessionsDB) RotateSessionIfNeeded(ctx context.Context, sessionID string) (*foundation.Session, error) {
+	// Get the current session
+	currentSession, err := s.ByID(ctx, sessionID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Check if session is expired
+	if time.Now().After(currentSession.ExpiresAt) {
+		return nil, sql.ErrNoRows // or a custom error
+	}
+
+	// Only rotate user sessions, not anonymous
+	if !currentSession.UserID.Valid {
+		return currentSession, nil
+	}
+
+	// Check if rotation is needed (more than 30 minutes since creation)
+	if time.Since(currentSession.CreatedAt) <= SessionRotationInterval {
+		return currentSession, nil
+	}
+
+	// Generate new session ID and CSRF token
+	newSessionID, err := generateRandomID(SessionLength)
+	if err != nil {
+		return nil, err
+	}
+
+	newCSRFToken, err := generateRandomID(CSRFTokenLength)
+	if err != nil {
+		return nil, err
+	}
+
+	// Create new session
+	newSession := &foundation.Session{
+		ID:        newSessionID,
+		UserID:    currentSession.UserID,
+		CreatedAt: time.Now(),
+		ExpiresAt: time.Now().Add(SessionDuration),
+		CSRFToken: newCSRFToken,
+	}
+
+	// Insert new session
+	_, err = s.db.NewInsert().Model(newSession).Exec(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// Delete old session
+	err = s.Delete(ctx, sessionID)
+	if err != nil {
+		// If delete fails, we should probably delete the new session to avoid duplicates
+		s.Delete(ctx, newSessionID)
+		return nil, err
+	}
+
+	return newSession, nil
 }
 
 func (s *sessionsDB) startCleanup() {

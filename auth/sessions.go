@@ -17,6 +17,18 @@ func GetOrCreateSession(r *foundation.Request) (*foundation.Session, error) {
 		return nil, err
 	}
 	if session != nil {
+		// For user sessions, rotate if needed
+		if session.UserID.Valid {
+			rotatedSession, err := r.DB.Sessions.RotateSessionIfNeeded(r.Context, session.ID)
+			if err != nil {
+				return nil, err
+			}
+			// If session was rotated, update the cookie
+			if rotatedSession.ID != session.ID {
+				setSessionCookie(r.Writer, rotatedSession)
+			}
+			return rotatedSession, nil
+		}
 		return session, nil
 	}
 

@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-func TesthashPassword(t *testing.T) {
+func TestHashPassword(t *testing.T) {
 	password := "testpassword123"
 
 	hash, err := HashPassword(password)
@@ -56,7 +56,7 @@ func TesthashPassword(t *testing.T) {
 	}
 }
 
-func TestverifyPassword(t *testing.T) {
+func TestVerifyPassword(t *testing.T) {
 	password := "testpassword123"
 	wrongPassword := "wrongpassword"
 
@@ -84,7 +84,7 @@ func TestverifyPassword(t *testing.T) {
 	}
 }
 
-func TestverifyPasswordInvalidFormats(t *testing.T) {
+func TestVerifyPasswordInvalidFormats(t *testing.T) {
 	password := "testpassword"
 
 	testCases := []struct {

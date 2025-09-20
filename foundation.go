@@ -54,6 +54,7 @@ type SessionDB interface {
 	InsertAnonymousSession(ctx context.Context) (*Session, error)
 	ByID(ctx context.Context, sessionID string) (*Session, error)
 	Delete(ctx context.Context, sessionID string) error
+	RotateSessionIfNeeded(ctx context.Context, sessionID string) (*Session, error)
 }
 
 type User struct {
