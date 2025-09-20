@@ -13,17 +13,35 @@ import (
 	"github.com/mbertschler/html"
 )
 
-func (s *Server) renderPage(ctx *foundation.Context, fn pages.PageFunc) httprouter.Handle {
+var ErrStopRendering = errors.New("stop rendering")
+
+type RenderOption struct {
+	BeforeRender func(req *foundation.Request) error
+}
+
+func RequireLogin() RenderOption {
+	return RenderOption{
+		BeforeRender: func(req *foundation.Request) error {
+			if req.User == nil {
+				http.Redirect(req.Writer, req.Request, "/admin/login", http.StatusFound)
+				return ErrStopRendering
+			}
+			return nil
+		},
+	}
+}
+
+func (s *Server) renderPage(ctx *foundation.Context, fn pages.PageFunc, opts ...RenderOption) httprouter.Handle {
 	return s.renderFrame(ctx, func(req *foundation.Request) (html.Block, error) {
 		page, err := fn(req)
 		if err != nil {
 			return nil, err
 		}
 		return page.RenderHTML(req), nil
-	})
+	}, opts...)
 }
 
-func (s *Server) renderFrame(ctx *foundation.Context, fn pages.FrameFunc) httprouter.Handle {
+func (s *Server) renderFrame(ctx *foundation.Context, fn pages.FrameFunc, opts ...RenderOption) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 		req := &foundation.Request{
 			Context: ctx,
@@ -59,6 +77,24 @@ func (s *Server) renderFrame(ctx *foundation.Context, fn pages.FrameFunc) httpro
 			req.User = user
 		}
 
+		// in case token was rotated, also make it available to frames and streams
+		w.Header().Set("X-CSRF-Token", req.CSRFToken())
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+
+		for _, opt := range opts {
+			if opt.BeforeRender != nil {
+				err := opt.BeforeRender(req)
+				if errors.Is(err, ErrStopRendering) {
+					return
+				}
+				if err != nil {
+					log.Println("BeforeRender error:", err)
+					http.Error(w, err.Error(), http.StatusInternalServerError)
+					return
+				}
+			}
+		}
+
 		block, err := fn(req)
 		if err != nil {
 			log.Println("Render error:", err)
@@ -66,10 +102,6 @@ func (s *Server) renderFrame(ctx *foundation.Context, fn pages.FrameFunc) httpro
 			return
 		}
 
-		// in case token was rotated, also make it available to frames and streams
-		w.Header().Set("X-CSRF-Token", req.CSRFToken())
-
-		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		err = html.Render(w, block)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)

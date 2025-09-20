@@ -35,16 +35,16 @@ func RunServer(ctx *foundation.Context) error {
 
 func (s *Server) setupPageRoutes() {
 	s.router.Handler("GET", "/", http.RedirectHandler("/admin", http.StatusFound))
-	s.router.GET("/admin", s.renderPage(s.ctx, pages.IndexPage))
 	s.router.GET("/admin/login", s.renderPage(s.ctx, pages.LoginPage))
 	s.router.POST("/admin/login", s.renderFrame(s.ctx, pages.LoginFrame))
-	s.router.POST("/admin/logout", s.renderFrame(s.ctx, pages.LogoutFrame))
+	s.router.POST("/admin/logout", s.renderFrame(s.ctx, pages.LogoutFrame, RequireLogin()))
 
-	s.router.GET("/admin/frame/users/new", s.renderFrame(s.ctx, pages.UserNewFrame))
-	s.router.GET("/admin/frame/users/update/:id", s.renderFrame(s.ctx, pages.UserUpdateFrame))
-	s.router.POST("/admin/users", s.renderFrame(s.ctx, pages.UsersFrame))
-	s.router.PATCH("/admin/users/:id", s.renderFrame(s.ctx, pages.UsersFrame))
-	s.router.DELETE("/admin/users/:id", s.renderFrame(s.ctx, pages.UsersFrame))
+	s.router.GET("/admin", s.renderPage(s.ctx, pages.IndexPage, RequireLogin()))
+	s.router.GET("/admin/frame/users/new", s.renderFrame(s.ctx, pages.UserNewFrame, RequireLogin()))
+	s.router.GET("/admin/frame/users/update/:id", s.renderFrame(s.ctx, pages.UserUpdateFrame, RequireLogin()))
+	s.router.POST("/admin/users", s.renderFrame(s.ctx, pages.UsersFrame, RequireLogin()))
+	s.router.PATCH("/admin/users/:id", s.renderFrame(s.ctx, pages.UsersFrame, RequireLogin()))
+	s.router.DELETE("/admin/users/:id", s.renderFrame(s.ctx, pages.UsersFrame, RequireLogin()))
 }
 
 func (s *Server) setupGeneralRoutes() error {
