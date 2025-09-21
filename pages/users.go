@@ -15,45 +15,10 @@ import (
 )
 
 func UsersPage(req *foundation.Request) (*Page, error) {
-	var body html.Blocks
-	body.Add(html.P(attr.Class(" mt-4"),
-		html.Button(attr.Class("btn-outline").
-			DataAttr("controller", "toast-button").
-			DataAttr("action", "click->toast-button#toast"),
-			html.Text("Toast from front-end"),
-		),
-	))
-	body.Add(html.Div(attr.Id("toaster").Class("toaster")))
-
-	var userText string
-	if req.User != nil {
-		userText = fmt.Sprintf("User: ID %d Username %q Name %q",
-			req.User.ID, req.User.UserName, req.User.DisplayName)
-	} else {
-		userText = "User: not logged in"
-	}
-
-	body.Add(html.Div(attr.Class("p-4 md:p-6 xl:p-12"),
-		html.H3(attr.Class("text-xl font-bold mt-8 mb-4"), html.Text("Session and User Info")),
-		html.Pre(attr.Class("bg-gray-100 p-4 rounded whitespace-pre-wrap"),
-			html.Text(fmt.Sprintf("Session: ID %q UserID %t %d\n",
-				req.Session.ID, req.Session.UserID.Valid, req.Session.UserID.Int64)),
-			html.Text(userText),
-		),
-		html.Form(attr.Class("mt-8").Method("POST").Action("/admin/logout"),
-			html.Button(attr.Class("btn-primary").Type("submit"),
-				html.Text("Logout"),
-			),
-		),
-	))
-
-	// Add user management frame
-
 	usersFrame, err := UsersFrame(req)
 	if err != nil {
 		return nil, errors.Wrap(err, "usersFrame")
 	}
-	body.Add(usersFrame)
 
 	page := &Page{
 		Title:   "Quicklink - Users",
@@ -61,7 +26,7 @@ func UsersPage(req *foundation.Request) (*Page, error) {
 		Header: Header{
 			Title: "Users",
 		},
-		Body: body,
+		Body: usersFrame,
 	}
 
 	return page, nil
@@ -80,7 +45,6 @@ func UsersFrame(req *foundation.Request) (html.Block, error) {
 			return nil, errors.Wrap(err, "patchUser")
 		}
 	case http.MethodDelete:
-		log.Println("DELETE user request")
 		err := deleteUser(req)
 		if err != nil {
 			return nil, errors.Wrap(err, "deleteUser")
@@ -95,9 +59,11 @@ func UsersFrame(req *foundation.Request) (html.Block, error) {
 	return html.Elem("turbo-frame", attr.Id("users-frame"),
 		html.Div(attr.Class("p-4 md:p-6 xl:p-12"),
 			html.Main(attr.Class("mx-auto relative w-full max-w-screen-lg gap-10"),
-				html.H2(attr.Class("mx-auto max-w-screen-lg text-2xl font-bold pb-4"), html.Text("All Users")),
+				html.Div(attr.Class("flex justify-between items-center mb-4"),
+					html.H2(attr.Class("text-2xl font-bold"), html.Text("Registered Users")),
+					newUserForm(),
+				),
 				usersTable(allUsers),
-				newUserForm(),
 			),
 		),
 		html.Elem("turbo-frame", attr.Id("user-dialog-frame")),
@@ -115,11 +81,6 @@ func postNewUser(req *foundation.Request) error {
 	displayName := r.FormValue("display_name")
 	username := r.FormValue("username")
 	password := r.FormValue("password")
-
-	log.Printf("Received new user data:")
-	log.Printf("Display Name: %s", displayName)
-	log.Printf("Username: %s", username)
-	log.Printf("Password: %s", password)
 
 	exists, err := req.DB.Users.ExistsByUsername(req.Context.Context, username)
 	if err != nil {
@@ -147,7 +108,6 @@ func postNewUser(req *foundation.Request) error {
 		return errors.Wrap(err, "Insert user")
 	}
 
-	log.Printf("Inserted new user with ID %d", user.ID)
 	return nil
 }
 
@@ -257,9 +217,6 @@ func usersTable(users []*foundation.User) html.Block {
 
 	return html.Div(attr.Class("overflow-x-auto w-full"),
 		html.Table(attr.Class("table"),
-			html.Caption(nil,
-				html.Text("All known users. Rendered at "+fmt.Sprint(time.Now().Format("15:04:05.000"))),
-			),
 			html.Thead(nil,
 				html.Tr(nil,
 					html.Th(nil,
@@ -301,10 +258,10 @@ func userTableRow(user *foundation.User) html.Block {
 			html.Text(user.UserName),
 		),
 		html.Td(attr.Class("text-right"),
-			html.Text(user.CreatedAt.Format("2006-01-02 15:04:05.000")),
+			html.Text(user.CreatedAt.Format("2006-01-02 15:04")),
 		),
 		html.Td(attr.Class("text-right"),
-			html.Text(user.UpdatedAt.Format("2006-01-02 15:04:05.000")),
+			html.Text(user.UpdatedAt.Format("2006-01-02 15:04")),
 		),
 		html.Td(nil,
 			html.A(attr.Href(fmt.Sprintf("/admin/frame/users/update/%d", user.ID)).Class("btn-ghost").Attr("data-turbo-frame", "user-dialog-frame"),
@@ -317,7 +274,7 @@ func userTableRow(user *foundation.User) html.Block {
 func newUserForm() html.Block {
 	return html.Blocks{
 		html.A(attr.Href("/admin/frame/users/new").Class("btn-outline").Attr("data-turbo-frame", "user-dialog-frame"),
-			html.Text("Add New User"),
+			html.Text("Add User"),
 		),
 	}
 }
