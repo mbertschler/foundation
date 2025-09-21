@@ -12,14 +12,6 @@ import (
 )
 
 func LoginPage(req *foundation.Request) (*Page, error) {
-	page := &Page{
-		Title: "Foundation - Login",
-		Body:  loginFrame(nil),
-	}
-	return page, nil
-}
-
-func LoginFrame(req *foundation.Request) (html.Block, error) {
 	var loginErr error
 	switch req.Request.Method {
 	case http.MethodPost:
@@ -32,7 +24,12 @@ func LoginFrame(req *foundation.Request) (html.Block, error) {
 			req.Writer.WriteHeader(http.StatusUnprocessableEntity)
 		}
 	}
-	return loginFrame(loginErr), nil
+
+	page := &Page{
+		Title: "Foundation - Login",
+		Body:  loginFrame(loginErr),
+	}
+	return page, nil
 }
 
 func postLogin(req *foundation.Request) error {

@@ -37,6 +37,10 @@ func (s *Server) renderPage(ctx *foundation.Context, fn pages.PageFunc, opts ...
 		if err != nil {
 			return nil, err
 		}
+		if page == nil {
+			// some requests like redirects might not return a page
+			return nil, nil
+		}
 		return page.RenderHTML(req), nil
 	}, opts...)
 }

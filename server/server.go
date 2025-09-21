@@ -36,7 +36,8 @@ func RunServer(ctx *foundation.Context) error {
 func (s *Server) setupPageRoutes() {
 	s.router.Handler("GET", "/", http.RedirectHandler("/admin", http.StatusFound))
 	s.router.GET("/admin/login", s.renderPage(s.ctx, pages.LoginPage))
-	s.router.POST("/admin/login", s.renderFrame(s.ctx, pages.LoginFrame))
+	s.router.POST("/admin/login", s.renderPage(s.ctx, pages.LoginPage))
+	// not really a frame, just redirects or throws error
 	s.router.POST("/admin/logout", s.renderFrame(s.ctx, pages.LogoutFrame, RequireLogin()))
 
 	s.router.GET("/admin", s.renderPage(s.ctx, pages.IndexPage, RequireLogin()))
