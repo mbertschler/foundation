@@ -11,6 +11,12 @@ import "@hotwired/turbo";
 import { setupStimulus } from "./stimulus";
 setupStimulus();
 
+document.addEventListener("turbo:render", (event) => {
+  // basecoat should actually do this via a mutation observer,
+  // but there seems to be some bug. Quick fix for now:
+  window.basecoat.initAll();
+});
+
 // CSRF token management for Turbo Frames
 document.addEventListener("turbo:before-fetch-response", (event) => {
   const csrfToken =
