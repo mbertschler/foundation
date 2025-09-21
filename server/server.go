@@ -40,7 +40,8 @@ func (s *Server) setupPageRoutes() {
 	// not really a frame, just redirects or throws error
 	s.router.POST("/admin/logout", s.renderFrame(s.ctx, pages.LogoutFrame, RequireLogin()))
 
-	s.router.GET("/admin", s.renderPage(s.ctx, pages.IndexPage, RequireLogin()))
+	s.router.GET("/admin", s.renderPage(s.ctx, pages.LinksPage, RequireLogin()))
+	s.router.GET("/admin/users", s.renderPage(s.ctx, pages.UsersPage, RequireLogin()))
 	s.router.GET("/admin/frame/users/new", s.renderFrame(s.ctx, pages.UserNewFrame, RequireLogin()))
 	s.router.GET("/admin/frame/users/update/:id", s.renderFrame(s.ctx, pages.UserUpdateFrame, RequireLogin()))
 	s.router.POST("/admin/users", s.renderFrame(s.ctx, pages.UsersFrame, RequireLogin()))

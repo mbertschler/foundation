@@ -9,7 +9,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-func IndexPage(req *foundation.Request) (*Page, error) {
+func LinksPage(req *foundation.Request) (*Page, error) {
 	var body html.Blocks
 	body.Add(html.H1(attr.Class("text-3xl font-bold p-8 text-center"),
 		html.Text(req.Config.Message),
@@ -55,8 +55,10 @@ func IndexPage(req *foundation.Request) (*Page, error) {
 	body.Add(usersFrame)
 
 	page := &Page{
-		Title: "Foundation",
-		Body:  body,
+		Title:   "Quicklink - Links",
+		Body:    body,
+		Sidebar: Sidebar{},
+		Header:  Header{Title: "Links"},
 	}
 
 	return page, nil
