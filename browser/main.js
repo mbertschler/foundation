@@ -14,14 +14,16 @@ setupStimulus();
 document.addEventListener("turbo:render", (event) => {
   // basecoat should actually do this via a mutation observer,
   // but there seems to be some bug. Quick fix for now:
+  window.basecoat.stop();
   window.basecoat.initAll();
+  window.basecoat.start();
 });
 
 // CSRF token management for Turbo Frames
 document.addEventListener("turbo:before-fetch-response", (event) => {
   const csrfToken =
     event.detail.fetchResponse.response.headers.get("x-csrf-token");
-  if (csrfToken) {
+  if (csrfToken != "") {
     updateCSRFMetaTag(csrfToken);
   }
 });
