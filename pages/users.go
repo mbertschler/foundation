@@ -21,7 +21,7 @@ func UsersPage(req *foundation.Request) (*Page, error) {
 	}
 
 	page := &Page{
-		Title:   "Quicklink - Users",
+		Title:   "Quick Links - Users",
 		Sidebar: Sidebar{},
 		Header: Header{
 			Title: "Users",

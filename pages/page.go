@@ -53,7 +53,7 @@ func (s Sidebar) RenderHTML() html.Block {
 			html.Section(attr.Class("scrollbar"),
 				html.Div(attr.Role("group").Attr("aria-labelledby", "group-label-content-1").Class("flex flex-col h-full"),
 					html.H1(attr.Id("group-label-content-1").Class("text-2xl font-semibold tracking-tight m-2 mb-4"),
-						html.Text("Quicklink"),
+						html.Text("Quick Links"),
 					),
 					html.Ul(attr.Class("flex-grow"),
 						html.Li(nil,

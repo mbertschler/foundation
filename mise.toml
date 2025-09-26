@@ -18,7 +18,7 @@ run = ["go run ./cmd/foundation-demo -dev"]
 sources = ["**/*.go", "go.mod", "go.sum"]
 
 [tasks.server-watch]
-run = ["mise watch --debounce 250ms --exts .go,.json --restart server"]
+run = ["mise watch --debounce 250ms --exts .go,.json,.sql --restart server"]
 
 [tasks.browser-build]
 dir = "browser"
