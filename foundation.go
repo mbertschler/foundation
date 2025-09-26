@@ -46,6 +46,7 @@ func (r *Request) PreviousCSRFToken() string {
 type DB struct {
 	Users    UserDB
 	Sessions SessionDB
+	Links    LinkDB
 }
 
 type UserDB interface {
@@ -64,6 +65,13 @@ type SessionDB interface {
 	ByID(ctx context.Context, sessionID string) (*Session, error)
 	Delete(ctx context.Context, sessionID string) error
 	RotateSessionIfNeeded(ctx context.Context, sessionID string) (*Session, error)
+}
+
+type LinkDB interface {
+	Insert(ctx context.Context, link *Link) error
+	Update(ctx context.Context, link *Link) error
+	ByShortLink(ctx context.Context, shortLink string) (*Link, error)
+	All(ctx context.Context) ([]*Link, error)
 }
 
 type User struct {
@@ -85,4 +93,14 @@ type Session struct {
 	CreatedAt time.Time     `bun:"created_at,nullzero,notnull"`
 	ExpiresAt time.Time     `bun:"expires_at,nullzero,notnull"`
 	CSRFToken string        `bun:"csrf_token,nullzero,notnull"`
+}
+
+type Link struct {
+	bun.BaseModel `bun:"table:links,alias:l"`
+
+	ShortLink string    `bun:"short_link,pk"`
+	FullURL   string    `bun:"full_url,notnull"`
+	UserID    int64     `bun:"user_id,notnull"`
+	CreatedAt time.Time `bun:"created_at,nullzero,notnull"`
+	UpdatedAt time.Time `bun:"updated_at,nullzero,notnull"`
 }
