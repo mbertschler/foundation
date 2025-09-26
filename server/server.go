@@ -3,6 +3,7 @@ package server
 import (
 	"log"
 	"net/http"
+	"strings"
 
 	"github.com/julienschmidt/httprouter"
 	"github.com/mbertschler/foundation"
@@ -64,9 +65,21 @@ func (s *Server) setupGeneralRoutes() error {
 	s.router.ServeFiles("/dist/*filepath", assets.Dist)
 	s.router.ServeFiles("/img/*filepath", assets.Img)
 
-	s.router.NotFound = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		http.Error(w, "page not found", http.StatusNotFound)
-	})
+	s.router.NotFound = s.notFoundHandler(s.ctx)
 
 	return nil
+}
+
+func (s *Server) notFoundHandler(ctx *foundation.Context) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		path := strings.TrimPrefix(r.URL.Path, "/")
+		if path != "" {
+			link, err := ctx.DB.Links.ByShortLink(r.Context(), path)
+			if err == nil && link != nil {
+				http.Redirect(w, r, link.FullURL, http.StatusFound)
+				return
+			}
+		}
+		http.Error(w, "page not found", http.StatusNotFound)
+	}
 }
