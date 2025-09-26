@@ -72,6 +72,7 @@ type LinkDB interface {
 	Update(ctx context.Context, link *Link) error
 	ByShortLink(ctx context.Context, shortLink string) (*Link, error)
 	All(ctx context.Context) ([]*Link, error)
+	Delete(ctx context.Context, shortLink string) error
 }
 
 type User struct {

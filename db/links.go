@@ -44,3 +44,8 @@ func (l *linksDB) All(ctx context.Context) ([]*foundation.Link, error) {
 	}
 	return links, nil
 }
+
+func (l *linksDB) Delete(ctx context.Context, shortLink string) error {
+	_, err := l.db.NewDelete().Model(nilLink).Where("short_link = ?", shortLink).Exec(ctx)
+	return err
+}

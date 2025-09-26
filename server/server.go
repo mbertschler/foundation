@@ -41,6 +41,12 @@ func (s *Server) setupPageRoutes() {
 	s.router.POST("/admin/logout", s.renderFrame(s.ctx, pages.LogoutFrame, RequireLogin()))
 
 	s.router.GET("/admin", s.renderPage(s.ctx, pages.LinksPage, RequireLogin()))
+	s.router.GET("/admin/links", s.renderPage(s.ctx, pages.LinksPage, RequireLogin()))
+	s.router.GET("/admin/frame/links/new", s.renderFrame(s.ctx, pages.LinkNewFrame, RequireLogin()))
+	s.router.GET("/admin/frame/links/update/:short_link", s.renderFrame(s.ctx, pages.LinkUpdateFrame, RequireLogin()))
+	s.router.POST("/admin/links", s.renderFrame(s.ctx, pages.LinksFrame, RequireLogin()))
+	s.router.PATCH("/admin/links/:short_link", s.renderFrame(s.ctx, pages.LinksFrame, RequireLogin()))
+	s.router.DELETE("/admin/links/:short_link", s.renderFrame(s.ctx, pages.LinksFrame, RequireLogin()))
 	s.router.GET("/admin/users", s.renderPage(s.ctx, pages.UsersPage, RequireLogin()))
 	s.router.GET("/admin/frame/users/new", s.renderFrame(s.ctx, pages.UserNewFrame, RequireLogin()))
 	s.router.GET("/admin/frame/users/update/:id", s.renderFrame(s.ctx, pages.UserUpdateFrame, RequireLogin()))
