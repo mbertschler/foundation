@@ -38,7 +38,7 @@ func (l *linksDB) ByShortLink(ctx context.Context, shortLink string) (*foundatio
 
 func (l *linksDB) All(ctx context.Context) ([]*foundation.Link, error) {
 	var links []*foundation.Link
-	err := l.db.NewSelect().Model(&links).Order("short_link ASC").Scan(ctx)
+	err := l.db.NewSelect().Model(&links).Relation("User").Order("short_link ASC").Scan(ctx)
 	if err != nil {
 		return nil, err
 	}

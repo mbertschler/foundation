@@ -104,4 +104,5 @@ type Link struct {
 	UserID    int64     `bun:"user_id,notnull"`
 	CreatedAt time.Time `bun:"created_at,nullzero,notnull"`
 	UpdatedAt time.Time `bun:"updated_at,nullzero,notnull"`
+	User      *User     `bun:"rel:has-one,join:user_id=id"`
 }

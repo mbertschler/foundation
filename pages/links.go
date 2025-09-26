@@ -208,7 +208,7 @@ func linksTable(links []*foundation.Link) html.Block {
 						html.Text("Full URL"),
 					),
 					html.Th(nil,
-						html.Text("User ID"),
+						html.Text("User"),
 					),
 					html.Th(nil,
 						html.Text("Created"),
@@ -229,6 +229,10 @@ func linksTable(links []*foundation.Link) html.Block {
 }
 
 func linkTableRow(link *foundation.Link) html.Block {
+	displayName := "Unknown"
+	if link.User != nil {
+		displayName = link.User.DisplayName
+	}
 	return html.Tr(nil,
 		html.Td(attr.Class("font-medium"),
 			html.A(attr.Href(fmt.Sprintf("/%s", link.ShortLink)), html.Text(link.ShortLink)),
@@ -237,7 +241,7 @@ func linkTableRow(link *foundation.Link) html.Block {
 			html.A(attr.Href(link.FullURL), html.Text(link.FullURL)),
 		),
 		html.Td(nil,
-			html.Text(fmt.Sprint(link.UserID)),
+			html.Text(displayName),
 		),
 		html.Td(attr.Class("text-right"),
 			html.Text(link.CreatedAt.Format("2006-01-02 15:04")),
