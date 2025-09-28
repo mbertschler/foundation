@@ -73,6 +73,7 @@ type LinkDB interface {
 	Update(ctx context.Context, link *Link) error
 	ByShortLink(ctx context.Context, shortLink string) (*Link, error)
 	All(ctx context.Context) ([]*Link, error)
+	AllWithVisitCounts(ctx context.Context) ([]*Link, error)
 	Delete(ctx context.Context, shortLink string) error
 }
 
@@ -105,12 +106,14 @@ type Session struct {
 type Link struct {
 	bun.BaseModel `bun:"table:links,alias:l"`
 
-	ShortLink string    `bun:"short_link,pk"`
-	FullURL   string    `bun:"full_url,notnull"`
-	UserID    int64     `bun:"user_id,notnull"`
-	CreatedAt time.Time `bun:"created_at,nullzero,notnull"`
-	UpdatedAt time.Time `bun:"updated_at,nullzero,notnull"`
-	User      *User     `bun:"rel:has-one,join:user_id=id"`
+	ShortLink   string       `bun:"short_link,pk"`
+	FullURL     string       `bun:"full_url,notnull"`
+	UserID      int64        `bun:"user_id,notnull"`
+	CreatedAt   time.Time    `bun:"created_at,nullzero,notnull"`
+	UpdatedAt   time.Time    `bun:"updated_at,nullzero,notnull"`
+	User        *User        `bun:"rel:has-one,join:user_id=id"`
+	Visits      []*LinkVisit `bun:"rel:has-many,join:short_link=short_link"`
+	VisitsCount int64        `bun:"visits_count,scanonly"`
 }
 
 type LinkVisit struct {

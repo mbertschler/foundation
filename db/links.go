@@ -45,6 +45,17 @@ func (l *linksDB) All(ctx context.Context) ([]*foundation.Link, error) {
 	return links, nil
 }
 
+func (l *linksDB) AllWithVisitCounts(ctx context.Context) ([]*foundation.Link, error) {
+	var links []*foundation.Link
+	err := l.db.NewSelect().Model(&links).Relation("User").ColumnExpr("l.*").
+		ColumnExpr("(SELECT COUNT(*) FROM link_visits WHERE short_link = l.short_link) AS visits_count").
+		Order("l.short_link").Scan(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return links, nil
+}
+
 func (l *linksDB) Delete(ctx context.Context, shortLink string) error {
 	_, err := l.db.NewDelete().Model(nilLink).Where("short_link = ?", shortLink).Exec(ctx)
 	return err

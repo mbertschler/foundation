@@ -50,18 +50,9 @@ func LinksFrame(req *foundation.Request) (html.Block, error) {
 		}
 	}
 
-	allLinks, err := req.DB.Links.All(req.Context.Context)
+	allLinks, err := req.DB.Links.AllWithVisitCounts(req.Context.Context)
 	if err != nil {
-		return nil, errors.Wrap(err, "All links")
-	}
-
-	visitCounts := make(map[string]int64)
-	for _, l := range allLinks {
-		count, err := req.DB.Visits.CountByLink(req.Context.Context, l.ShortLink)
-		if err != nil {
-			count = 0
-		}
-		visitCounts[l.ShortLink] = count
+		return nil, errors.Wrap(err, "AllWithVisitCounts")
 	}
 
 	return html.Elem("turbo-frame", attr.Id("links-frame"),
@@ -71,7 +62,7 @@ func LinksFrame(req *foundation.Request) (html.Block, error) {
 					html.H2(attr.Class("text-2xl font-bold"), html.Text("Short Links")),
 					newLinkForm(),
 				),
-				linksTable(allLinks, visitCounts),
+				linksTable(allLinks),
 			),
 		),
 		html.Elem("turbo-frame", attr.Id("link-dialog-frame")),
@@ -201,10 +192,10 @@ func deleteLink(req *foundation.Request) error {
 	return nil
 }
 
-func linksTable(links []*foundation.Link, visitCounts map[string]int64) html.Block {
+func linksTable(links []*foundation.Link) html.Block {
 	var rows html.Blocks
 	for _, l := range links {
-		rows.Add(linkTableRow(l, visitCounts))
+		rows.Add(linkTableRow(l))
 	}
 
 	return html.Div(attr.Class("overflow-x-auto w-full"),
@@ -241,7 +232,7 @@ func linksTable(links []*foundation.Link, visitCounts map[string]int64) html.Blo
 	)
 }
 
-func linkTableRow(link *foundation.Link, visitCounts map[string]int64) html.Block {
+func linkTableRow(link *foundation.Link) html.Block {
 	displayName := "Unknown"
 	if link.User != nil {
 		displayName = link.User.DisplayName
@@ -257,7 +248,7 @@ func linkTableRow(link *foundation.Link, visitCounts map[string]int64) html.Bloc
 			html.Text(displayName),
 		),
 		html.Td(attr.Class("text-right"),
-			html.Text(fmt.Sprint(visitCounts[link.ShortLink])),
+			html.Text(fmt.Sprint(link.VisitsCount)),
 		),
 		html.Td(attr.Class("text-right"),
 			html.Text(link.CreatedAt.Format("2006-01-02 15:04")),
