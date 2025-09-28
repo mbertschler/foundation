@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/mbertschler/foundation"
@@ -54,6 +55,15 @@ func LinksFrame(req *foundation.Request) (html.Block, error) {
 		return nil, errors.Wrap(err, "All links")
 	}
 
+	visitCounts := make(map[string]int64)
+	for _, l := range allLinks {
+		count, err := req.DB.Visits.CountByLink(req.Context.Context, l.ShortLink)
+		if err != nil {
+			count = 0
+		}
+		visitCounts[l.ShortLink] = count
+	}
+
 	return html.Elem("turbo-frame", attr.Id("links-frame"),
 		html.Div(attr.Class("p-4 md:p-6 xl:p-12"),
 			html.Main(attr.Class("mx-auto relative w-full max-w-screen-lg gap-10"),
@@ -61,7 +71,7 @@ func LinksFrame(req *foundation.Request) (html.Block, error) {
 					html.H2(attr.Class("text-2xl font-bold"), html.Text("Short Links")),
 					newLinkForm(),
 				),
-				linksTable(allLinks),
+				linksTable(allLinks, visitCounts),
 			),
 		),
 		html.Elem("turbo-frame", attr.Id("link-dialog-frame")),
@@ -191,10 +201,10 @@ func deleteLink(req *foundation.Request) error {
 	return nil
 }
 
-func linksTable(links []*foundation.Link) html.Block {
+func linksTable(links []*foundation.Link, visitCounts map[string]int64) html.Block {
 	var rows html.Blocks
 	for _, l := range links {
-		rows.Add(linkTableRow(l))
+		rows.Add(linkTableRow(l, visitCounts))
 	}
 
 	return html.Div(attr.Class("overflow-x-auto w-full"),
@@ -209,6 +219,9 @@ func linksTable(links []*foundation.Link) html.Block {
 					),
 					html.Th(nil,
 						html.Text("User"),
+					),
+					html.Th(nil,
+						html.Text("Visits"),
 					),
 					html.Th(nil,
 						html.Text("Created"),
@@ -228,7 +241,7 @@ func linksTable(links []*foundation.Link) html.Block {
 	)
 }
 
-func linkTableRow(link *foundation.Link) html.Block {
+func linkTableRow(link *foundation.Link, visitCounts map[string]int64) html.Block {
 	displayName := "Unknown"
 	if link.User != nil {
 		displayName = link.User.DisplayName
@@ -242,6 +255,9 @@ func linkTableRow(link *foundation.Link) html.Block {
 		),
 		html.Td(nil,
 			html.Text(displayName),
+		),
+		html.Td(attr.Class("text-right"),
+			html.Text(fmt.Sprint(visitCounts[link.ShortLink])),
 		),
 		html.Td(attr.Class("text-right"),
 			html.Text(link.CreatedAt.Format("2006-01-02 15:04")),
@@ -369,4 +385,23 @@ func LinkUpdateFrame(req *foundation.Request) (html.Block, error) {
 		),
 		html.Script(nil, html.JS(fmt.Sprintf("document.getElementById('edit-link-dialog-%s').showModal();", link.ShortLink))),
 	), nil
+}
+
+func ShortLinkHandler(req *foundation.Request) (html.Block, error) {
+	path := strings.TrimPrefix(req.Request.URL.Path, "/")
+
+	link, err := req.DB.Links.ByShortLink(req.Context.Context, path)
+	if err != nil || link == nil {
+		req.Writer.WriteHeader(http.StatusNotFound)
+		return html.Text("page not found"), errors.New("not found")
+	}
+
+	visit := &foundation.LinkVisit{
+		ShortLink: path,
+		UserID:    req.Session.UserID,
+	}
+	req.DB.Visits.Insert(req.Context.Context, visit)
+
+	http.Redirect(req.Writer, req.Request, link.FullURL, http.StatusFound)
+	return nil, nil
 }

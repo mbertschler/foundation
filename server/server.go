@@ -3,7 +3,6 @@ package server
 import (
 	"log"
 	"net/http"
-	"strings"
 
 	"github.com/julienschmidt/httprouter"
 	"github.com/mbertschler/foundation"
@@ -54,6 +53,9 @@ func (s *Server) setupPageRoutes() {
 	s.router.POST("/admin/users", s.renderFrame(s.ctx, pages.UsersFrame, RequireLogin()))
 	s.router.PATCH("/admin/users/:id", s.renderFrame(s.ctx, pages.UsersFrame, RequireLogin()))
 	s.router.DELETE("/admin/users/:id", s.renderFrame(s.ctx, pages.UsersFrame, RequireLogin()))
+
+	// short link handler as last route, catch all
+	s.router.NotFound = handlerFuncAdapter(s.renderFrame(s.ctx, pages.ShortLinkHandler))
 }
 
 func (s *Server) setupGeneralRoutes() error {
@@ -65,21 +67,5 @@ func (s *Server) setupGeneralRoutes() error {
 	s.router.ServeFiles("/dist/*filepath", assets.Dist)
 	s.router.ServeFiles("/img/*filepath", assets.Img)
 
-	s.router.NotFound = s.notFoundHandler(s.ctx)
-
 	return nil
-}
-
-func (s *Server) notFoundHandler(ctx *foundation.Context) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		path := strings.TrimPrefix(r.URL.Path, "/")
-		if path != "" {
-			link, err := ctx.DB.Links.ByShortLink(r.Context(), path)
-			if err == nil && link != nil {
-				http.Redirect(w, r, link.FullURL, http.StatusFound)
-				return
-			}
-		}
-		http.Error(w, "page not found", http.StatusNotFound)
-	}
 }

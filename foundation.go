@@ -47,6 +47,7 @@ type DB struct {
 	Users    UserDB
 	Sessions SessionDB
 	Links    LinkDB
+	Visits   VisitDB
 }
 
 type UserDB interface {
@@ -73,6 +74,11 @@ type LinkDB interface {
 	ByShortLink(ctx context.Context, shortLink string) (*Link, error)
 	All(ctx context.Context) ([]*Link, error)
 	Delete(ctx context.Context, shortLink string) error
+}
+
+type VisitDB interface {
+	Insert(ctx context.Context, visit *LinkVisit) error
+	CountByLink(ctx context.Context, shortLink string) (int64, error)
 }
 
 type User struct {
@@ -105,4 +111,13 @@ type Link struct {
 	CreatedAt time.Time `bun:"created_at,nullzero,notnull"`
 	UpdatedAt time.Time `bun:"updated_at,nullzero,notnull"`
 	User      *User     `bun:"rel:has-one,join:user_id=id"`
+}
+
+type LinkVisit struct {
+	bun.BaseModel `bun:"table:link_visits,alias:lv"`
+
+	ID        int64         `bun:"id,pk,autoincrement"`
+	ShortLink string        `bun:"short_link,notnull"`
+	UserID    sql.NullInt64 `bun:"user_id"`
+	VisitedAt time.Time     `bun:"visited_at,nullzero,notnull"`
 }

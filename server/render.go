@@ -146,3 +146,9 @@ func verifyCSRFToken(req *foundation.Request) error {
 
 	return nil
 }
+
+func handlerFuncAdapter(fn httprouter.Handle) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		fn(w, r, nil)
+	}
+}
