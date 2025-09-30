@@ -2,7 +2,6 @@ package pages
 
 import (
 	"fmt"
-	"log"
 	"net/http"
 	"strings"
 	"time"
@@ -19,13 +18,17 @@ func LinksPage(req *foundation.Request) (*Page, error) {
 		return nil, errors.Wrap(err, "linksFrame")
 	}
 
+	var body html.Blocks
+	body.Add(linksFrame)
+	body.Add(html.Elem("turbo-stream-source", attr.Src("/admin/stream/links")))
+
 	page := &Page{
 		Title:   "Quick Links - Links",
 		Sidebar: Sidebar{},
 		Header: Header{
 			Title: "Links",
 		},
-		Body: linksFrame,
+		Body: body,
 	}
 
 	return page, nil
@@ -103,6 +106,11 @@ func postNewLink(req *foundation.Request) error {
 		return errors.Wrap(err, "Insert link")
 	}
 
+	err = req.Broadcast.Send("links")
+	if err != nil {
+		return errors.Wrap(err, "Broadcast.Send")
+	}
+
 	return nil
 }
 
@@ -137,7 +145,10 @@ func patchLink(req *foundation.Request) error {
 		if err != nil {
 			return errors.Wrap(err, "Update link")
 		}
-		log.Printf("Updated link with short link %s", oldShortLink)
+		err = req.Broadcast.Send("links")
+		if err != nil {
+			return errors.Wrap(err, "Broadcast.Send")
+		}
 	} else {
 		// Check if new short link already exists
 		_, err := req.DB.Links.ByShortLink(req.Context.Context, newShortLink)
@@ -164,7 +175,10 @@ func patchLink(req *foundation.Request) error {
 			return errors.Wrap(err, "Insert new link")
 		}
 
-		log.Printf("Replaced link %s with %s", oldShortLink, newShortLink)
+		err = req.Broadcast.Send("links")
+		if err != nil {
+			return errors.Wrap(err, "Broadcast.Send")
+		}
 	}
 
 	return nil
@@ -188,7 +202,10 @@ func deleteLink(req *foundation.Request) error {
 		return errors.Wrap(err, "Delete link")
 	}
 
-	log.Printf("Deleted link with short link %s", shortLink)
+	err = req.Broadcast.Send("links")
+	if err != nil {
+		return errors.Wrap(err, "Broadcast.Send")
+	}
 	return nil
 }
 
@@ -393,6 +410,21 @@ func ShortLinkHandler(req *foundation.Request) (html.Block, error) {
 	}
 	req.DB.Visits.Insert(req.Context.Context, visit)
 
+	err = req.Broadcast.Send("links")
+	if err != nil {
+		return nil, errors.Wrap(err, "Broadcast.Send")
+	}
+
 	http.Redirect(req.Writer, req.Request, link.FullURL, http.StatusFound)
 	return nil, nil
+}
+
+func LinksStream(req *foundation.Request) (html.Block, error) {
+	frame, err := LinksFrame(req)
+	if err != nil {
+		return nil, errors.Wrap(err, "LinksFrame")
+	}
+
+	return html.Elem("turbo-stream", attr.Action("replace").Target("links-frame"),
+		html.Template(nil, frame)), nil
 }

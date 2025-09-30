@@ -7,26 +7,16 @@ import (
 	"github.com/mbertschler/foundation"
 	"github.com/mbertschler/foundation/db"
 	"github.com/mbertschler/foundation/server"
+	"github.com/mbertschler/foundation/server/broadcast"
 )
-
-type service struct {
-	context context.Context
-	cancel  context.CancelFunc
-	config  *foundation.Config
-}
 
 func RunApp(config *foundation.Config) int {
 	ctx, cancel := context.WithCancel(context.Background())
-	svc := &service{
-		context: ctx,
-		cancel:  cancel,
-		config:  config,
-	}
-	_ = svc // todo, handle shutdown signals etc.
 
 	context := &foundation.Context{
-		Context: ctx,
-		Config:  config,
+		Context:   ctx,
+		Config:    config,
+		Broadcast: broadcast.New(),
 	}
 
 	var err error
@@ -44,7 +34,6 @@ func RunApp(config *foundation.Config) int {
 
 	<-ctx.Done()
 	log.Println("shutting down...")
-	svc.cancel()
-
+	cancel()
 	return 0
 }

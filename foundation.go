@@ -7,13 +7,15 @@ import (
 	"time"
 
 	"github.com/julienschmidt/httprouter"
+	"github.com/mbertschler/foundation/server/broadcast"
 	"github.com/uptrace/bun"
 )
 
 type Context struct {
 	context.Context
-	Config *Config
-	DB     *DB
+	Config    *Config
+	DB        *DB
+	Broadcast *broadcast.Broadcaster
 }
 
 type Request struct {
