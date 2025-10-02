@@ -25,7 +25,7 @@ func StartDB(context *foundation.Context) (*foundation.DB, error) {
 	if err != nil {
 		return nil, errors.Wrapf(err, "MkdirAll %q", dir)
 	}
-	connString := fmt.Sprintf("file:%s?cache=shared", context.Config.DBPath)
+	connString := fmt.Sprintf("file:%s?_journal_mode=WAL&cache=shared", context.Config.DBPath)
 	sqldb, err := sql.Open(sqliteshim.ShimName, connString)
 	if err != nil {
 		return nil, errors.Wrapf(err, "sql.Open with %q", connString)
@@ -65,6 +65,8 @@ func StartDB(context *foundation.Context) (*foundation.DB, error) {
 		Links:    &linksDB{db: db},
 		Visits:   &visitsDB{db: db},
 	}
+
+	fdb.SetSQLDB(sqldb)
 
 	return fdb, nil
 }

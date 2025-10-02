@@ -1,4 +1,5 @@
 {
     "HostPort": "localhost:3000",
-    "DBPath": "./_data/foundation.db"
+    "DBPath": "./_data/foundation.db",
+    "LitestreamYml": "./_data/litestream.yml"
 }

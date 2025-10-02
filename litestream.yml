@@ -1,0 +1,7 @@
+dbs:
+  - path: _data/foundation.db
+    replica:
+      type: s3
+      bucket: foundation-litestream
+      path: backup/foundation.db
+      region: us-east-1 # optional, set to your region

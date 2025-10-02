@@ -50,6 +50,16 @@ type DB struct {
 	Sessions SessionDB
 	Links    LinkDB
 	Visits   VisitDB
+
+	sqlDB *sql.DB
+}
+
+func (db *DB) SetSQLDB(sqlDB *sql.DB) {
+	db.sqlDB = sqlDB
+}
+
+func (db *DB) Close() error {
+	return db.sqlDB.Close()
 }
 
 type UserDB interface {
