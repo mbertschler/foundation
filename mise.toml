@@ -7,10 +7,10 @@ watchexec = "2.3.2"
 _.path = ['{{config_root}}/browser/node_modules/.bin']
 
 [tasks.setup]
-run = ["brew install gpg cloc"]
+run = ["brew install gpg cloc benbjohnson/litestream/litestream"]
 
 [tasks.dev]
-depends = "browser-install"
+depends = "setup browser-install"
 run = "mise browser-watch ::: server-watch"
 
 [tasks.server]
