@@ -3,8 +3,9 @@ when:
 
 steps:
   - name: lint
-    image: debian:13-slim
+    image: debian:13
     commands:
       - echo "This is the lint step"
-      - curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/HEAD/install.sh | sh -s -- -b $(go env GOPATH)/bin v2.5.0
+      - apt-get update && apt-get install -y curl
+      - curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/HEAD/install.sh | sh -s -- -b /usr/local/bin v2.5.0
       - golangci-lint run
