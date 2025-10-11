@@ -2,8 +2,9 @@ when:
   - event: push
 
 steps:
-  - name: build
-    image: debian
+  - name: lint
+    image: debian:13-slim
     commands:
-      - echo "This is the build step"
-      - echo "binary-data-123" > executable
+      - echo "This is the lint step"
+      - curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/HEAD/install.sh | sh -s -- -b $(go env GOPATH)/bin v2.5.0
+      - golangci-lint run
