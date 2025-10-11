@@ -3,9 +3,7 @@ when:
 
 steps:
   - name: lint
-    image: debian:13
+    image: gitea.web2.mbertschler.com/docker/woodpecker-ci:latest
     commands:
       - echo "This is the lint step"
-      - apt-get update && apt-get install -y curl
-      - curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/HEAD/install.sh | sh -s -- -b /usr/local/bin v2.5.0
-      - golangci-lint run
+      - mise run lint

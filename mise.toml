@@ -1,6 +1,7 @@
 [tools]
 bun = "1.2.21"
 go = "1.25.1"
+golangci-lint = "2.5.0"
 watchexec = "2.3.2"
 
 [env]
@@ -39,3 +40,6 @@ run = ["rm go.sum", "go mod tidy"]
 
 [tasks.cloc]
 run = "cloc --exclude-dir=node_modules,dist ."
+
+[tasks.lint]
+run = "golangci-lint run"
