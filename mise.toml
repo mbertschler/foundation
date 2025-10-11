@@ -43,3 +43,6 @@ run = "cloc --exclude-dir=node_modules,dist ."
 
 [tasks.lint]
 run = "golangci-lint run --timeout=5m"
+
+[tasks.test]
+run = "go test ./..."
