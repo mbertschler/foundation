@@ -42,7 +42,7 @@ run = ["rm go.sum", "go mod tidy"]
 run = "cloc --exclude-dir=node_modules,dist ."
 
 [tasks.lint]
-run = "golangci-lint run"
+run = "golangci-lint run --timeout=5m"
 
 [tasks.lint-ci]
 run = "golangci-lint run --concurrency=1 --timeout=5m"
