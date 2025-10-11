@@ -5,6 +5,10 @@ steps:
   - name: lint
     image: gitea.web2.mbertschler.com/docker/woodpecker-ci:latest
     commands:
+      - rm -rf /root/go /root/.local /root/.cache
+      - mkdir -p /cache/go /cache/local /cache/cache
+      - ln -s /cache/go /root/go
+      - ln -s /cache/local /root/.local
+      - ln -s /cache/cache /root/.cache
       - echo "This is the lint step"
       - mise run lint
-      - sleep 5m
