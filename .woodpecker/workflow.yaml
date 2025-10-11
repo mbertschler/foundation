@@ -10,5 +10,4 @@ steps:
       - ln -s /cache/go /root/go
       - ln -s /cache/local /root/.local
       - ln -s /cache/cache /root/.cache
-      - echo "This is the lint step"
       - mise run lint

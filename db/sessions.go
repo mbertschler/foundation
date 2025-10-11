@@ -7,6 +7,8 @@ import (
 	"encoding/base64"
 	"time"
 
+	"errors"
+
 	"github.com/mbertschler/foundation"
 	"github.com/uptrace/bun"
 )
@@ -129,7 +131,10 @@ func (s *sessionsDB) RotateSessionIfNeeded(ctx context.Context, sessionID string
 	err = s.Delete(ctx, sessionID)
 	if err != nil {
 		// If delete fails, we should probably delete the new session to avoid duplicates
-		s.Delete(ctx, newSessionID)
+		newErr := s.Delete(ctx, newSessionID)
+		if newErr != nil {
+			err = errors.Join(err, newErr)
+		}
 		return nil, err
 	}
 

@@ -408,7 +408,10 @@ func ShortLinkHandler(req *foundation.Request) (html.Block, error) {
 		ShortLink: path,
 		UserID:    req.Session.UserID,
 	}
-	req.DB.Visits.Insert(req.Context.Context, visit)
+	err = req.DB.Visits.Insert(req.Context.Context, visit)
+	if err != nil {
+		return nil, errors.Wrap(err, "Visits.Insert")
+	}
 
 	err = req.Broadcast.Send("links")
 	if err != nil {

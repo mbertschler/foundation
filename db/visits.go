@@ -8,8 +8,6 @@ import (
 )
 
 var (
-	nilVisit *foundation.LinkVisit
-
 	_ foundation.VisitDB = (*visitsDB)(nil)
 )
 

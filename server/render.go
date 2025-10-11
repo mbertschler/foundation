@@ -90,9 +90,15 @@ func (s *Server) renderSSEStreamOnChannel(ctx *foundation.Context, chanName stri
 				}
 				lines := strings.Split(rendered, "\n")
 				for _, line := range lines {
-					fmt.Fprintf(w, "data: %s\n", line)
+					_, err := fmt.Fprintf(w, "data: %s\n", line)
+					if err != nil {
+						log.Println("data write error:", err)
+					}
 				}
-				fmt.Fprintf(w, "\n") // Terminate message
+				_, err = fmt.Fprintf(w, "\n") // Terminate message
+				if err != nil {
+					log.Println("terminate write error:", err)
+				}
 				flusher.Flush()
 			}
 		}

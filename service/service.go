@@ -59,7 +59,10 @@ func RunApp(config *foundation.Config) int {
 
 	<-sigChan
 	log.Println("shutting down...")
-	context.DB.Close()
+	err = context.DB.Close()
+	if err != nil {
+		log.Println("DB.Close error:", err)
+	}
 	return 0
 }
 
