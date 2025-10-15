@@ -39,6 +39,9 @@ func Login(r *foundation.Request) error {
 	}
 
 	user, userErr := r.DB.Users.ByUsername(r.Context, username)
+
+	// We always verify the password, even if the user does not exist
+	// to avoid timing attacks, later we check userErr.
 	hashedPassword := someHash
 	if user != nil {
 		hashedPassword = user.HashedPassword

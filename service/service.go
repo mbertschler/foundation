@@ -29,8 +29,9 @@ func RunApp(config *foundation.Config) int {
 	if context.Config.LitestreamYml != "" {
 		err = restoreLitestreamIfNeeded(context)
 		if err != nil {
+			// if this is the first run, there is nothing to restore
+			// just log the error and continue
 			log.Println("restoreLitestreamIfNeeded error:", err)
-			return 1
 		}
 
 		err = startLitestream(context)
