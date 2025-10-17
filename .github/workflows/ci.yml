@@ -1,0 +1,54 @@
+name: CI
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+    branches: ['**']
+
+jobs:
+  lint-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install mise
+        uses: jdx/mise-action@v2
+        with:
+          experimental: true
+
+      - name: Setup Go cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+
+      - name: Setup mise cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.local/share/mise
+            ~/.cache/mise
+          key: ${{ runner.os }}-mise-${{ hashFiles('mise.toml', '.mise.toml', '.tool-versions') }}
+          restore-keys: |
+            ${{ runner.os }}-mise-
+
+      - name: Setup Node modules cache
+        uses: actions/cache@v4
+        with:
+          path: browser/node_modules
+          key: ${{ runner.os }}-node-${{ hashFiles('browser/bun.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+
+      - name: Run lint
+        run: mise run lint
+
+      - name: Run tests
+        run: mise run test

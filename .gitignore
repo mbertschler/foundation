@@ -36,3 +36,4 @@ browser/dist/*
 !browser/dist/keep
 
 _data/
+.claude
