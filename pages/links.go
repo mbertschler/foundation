@@ -41,16 +41,27 @@ func (h *Handler) LinksFrame(req *foundation.Request) (html.Block, error) {
 		if err != nil {
 			return nil, errors.Wrap(err, "postNewLink")
 		}
+		err = h.Broadcast.Send("links")
+		if err != nil {
+			return nil, errors.Wrap(err, "Broadcast.Send")
+		}
 	case http.MethodPatch:
 		err := h.patchLink(req)
 		if err != nil {
 			return nil, errors.Wrap(err, "patchLink")
 		}
-		h.Broadcast.Send("links")
+		err = h.Broadcast.Send("links")
+		if err != nil {
+			return nil, errors.Wrap(err, "Broadcast.Send")
+		}
 	case http.MethodDelete:
 		err := h.deleteLink(req)
 		if err != nil {
 			return nil, errors.Wrap(err, "deleteLink")
+		}
+		err = h.Broadcast.Send("links")
+		if err != nil {
+			return nil, errors.Wrap(err, "Broadcast.Send")
 		}
 	}
 
