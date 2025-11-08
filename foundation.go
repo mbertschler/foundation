@@ -14,7 +14,6 @@ import (
 type Context struct {
 	context.Context
 	Config    *Config
-	DB        *DB
 	Broadcast *broadcast.Broadcaster
 }
 
@@ -43,55 +42,6 @@ func (r *Request) PreviousCSRFToken() string {
 		return ""
 	}
 	return r.PreviousSession.CSRFToken
-}
-
-type DB struct {
-	Users    UserDB
-	Sessions SessionDB
-	Links    LinkDB
-	Visits   VisitDB
-
-	sqlDB *sql.DB
-}
-
-func (db *DB) SetSQLDB(sqlDB *sql.DB) {
-	db.sqlDB = sqlDB
-}
-
-func (db *DB) Close() error {
-	return db.sqlDB.Close()
-}
-
-type UserDB interface {
-	ByID(ctx context.Context, id int64) (*User, error)
-	ByUsername(ctx context.Context, username string) (*User, error)
-	ExistsByUsername(ctx context.Context, username string) (bool, error)
-	Insert(ctx context.Context, user *User) error
-	Update(ctx context.Context, user *User) error
-	Delete(ctx context.Context, userID int64) error
-	All(ctx context.Context) ([]*User, error)
-}
-
-type SessionDB interface {
-	InsertUserSession(ctx context.Context, userID int64) (*Session, error)
-	InsertAnonymousSession(ctx context.Context) (*Session, error)
-	ByID(ctx context.Context, sessionID string) (*Session, error)
-	Delete(ctx context.Context, sessionID string) error
-	RotateSessionIfNeeded(ctx context.Context, sessionID string) (*Session, error)
-}
-
-type LinkDB interface {
-	Insert(ctx context.Context, link *Link) error
-	Update(ctx context.Context, link *Link) error
-	ByShortLink(ctx context.Context, shortLink string) (*Link, error)
-	All(ctx context.Context) ([]*Link, error)
-	AllWithVisitCounts(ctx context.Context) ([]*Link, error)
-	Delete(ctx context.Context, shortLink string) error
-}
-
-type VisitDB interface {
-	Insert(ctx context.Context, visit *LinkVisit) error
-	CountByLink(ctx context.Context, shortLink string) (int64, error)
 }
 
 type User struct {

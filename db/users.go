@@ -11,8 +11,6 @@ import (
 
 var (
 	nilUser *foundation.User
-
-	_ foundation.UserDB = (*usersDB)(nil)
 )
 
 type usersDB struct {

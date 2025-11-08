@@ -16,7 +16,7 @@ const (
 	someHash = "$argon2id$t=3,m=32768,p=4$32J16ZbXQegxU2CU3nOu/lfkno/g+Sv4pZti9LIgfX0$H6lc+0VxTFkPy9yc7z14tHq0bSYknIqmlj66ST67F+"
 )
 
-func Login(r *foundation.Request) error {
+func (h *Handler) Login(r *foundation.Request) error {
 	err := r.Request.ParseForm()
 	if err != nil {
 		return err
@@ -38,7 +38,7 @@ func Login(r *foundation.Request) error {
 		return errors.New("too many failed attempts, please try again later")
 	}
 
-	user, userErr := r.DB.Users.ByUsername(r.Context, username)
+	user, userErr := h.DB.Users.ByUsername(r.Context, username)
 
 	// We always verify the password, even if the user does not exist
 	// to avoid timing attacks, later we check userErr.
@@ -58,18 +58,18 @@ func Login(r *foundation.Request) error {
 		return errors.New("invalid password")
 	}
 
-	session, err := getSessionFromRequest(r)
+	session, err := h.getSessionFromRequest(r)
 	if err != nil {
 		return err
 	}
 	if session != nil {
-		err = r.DB.Sessions.Delete(r.Context, session.ID)
+		err = h.DB.Sessions.Delete(r.Context, session.ID)
 		if err != nil {
 			return err
 		}
 	}
 
-	session, err = r.DB.Sessions.InsertUserSession(r.Context, user.ID)
+	session, err = h.DB.Sessions.InsertUserSession(r.Context, user.ID)
 	if err != nil {
 		return err
 	}
@@ -80,19 +80,19 @@ func Login(r *foundation.Request) error {
 	return nil
 }
 
-func Logout(r *foundation.Request) error {
-	session, err := getSessionFromRequest(r)
+func (h *Handler) Logout(r *foundation.Request) error {
+	session, err := h.getSessionFromRequest(r)
 	if err != nil {
 		return err
 	}
 	if session != nil {
-		err = r.DB.Sessions.Delete(r.Context, session.ID)
+		err = h.DB.Sessions.Delete(r.Context, session.ID)
 		if err != nil {
 			return err
 		}
 	}
 
-	session, err = r.DB.Sessions.InsertAnonymousSession(r.Context)
+	session, err = h.DB.Sessions.InsertAnonymousSession(r.Context)
 	if err != nil {
 		return err
 	}

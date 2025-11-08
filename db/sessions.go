@@ -18,8 +18,6 @@ var (
 	CSRFTokenLength         = 32
 	SessionDuration         = 90 * 24 * time.Hour
 	SessionRotationInterval = 30 * time.Minute
-
-	_ foundation.SessionDB = (*sessionsDB)(nil)
 )
 
 var nilSession *foundation.Session

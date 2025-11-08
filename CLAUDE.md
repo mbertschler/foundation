@@ -42,18 +42,26 @@ This starts both the Go server and the frontend build watcher. The app will be a
 
 **Core Request Flow:**
 1. HTTP requests hit `server/server.go` which uses `httprouter` for routing
-2. Requests are wrapped in `foundation.Request` which includes context, DB, session, and user
+2. Requests are wrapped in `foundation.Request` which includes context, session, user, and HTTP primitives
 3. Routes are rendered via `renderPage()` or `renderFrame()` methods that handle authentication, CSRF protection, and session management
-4. Pages/frames are defined in the `pages/` package and return HTML using the `github.com/mbertschler/html` builder
+4. Page/frame handler methods (on `pages.Handler`) have access to DB via `h.DB` and return HTML using the `github.com/mbertschler/html` builder
 
 **Key Components:**
-- `foundation.Context` - Application-level context containing Config, DB, and Broadcast
-- `foundation.Request` - Per-request context with Session, User, and HTTP primitives
-- `foundation.DB` - Database abstraction with interface-based repositories (UserDB, SessionDB, LinkDB, VisitDB)
+- `foundation.Context` - Application-level context containing Config and Broadcast (no DB!)
+- `foundation.Request` - Per-request context with Session, User, and HTTP primitives (no DB!)
+- `server.Server` - HTTP server with handlers that own the DB reference
+- `pages.Handler` - Page handler struct with `DB *db.DB` and `Auth *auth.Handler` fields
+- `auth.Handler` - Auth handler struct with `DB *db.DB` field for session/user operations
+- `db.DB` - Database struct with concrete repository implementations (Users, Sessions, Links, Visits)
 
 **Database Layer:**
 - Uses SQLite via `uptrace/bun` ORM with SQL migrations in `db/migrations/`
-- Database interfaces are defined in `foundation.go`, implementations in `db/` package
+- Model structs (User, Session, Link, LinkVisit) are defined in `foundation.go` with `bun` tags
+- DB struct and repository implementations are in `db/` package
+- DB is initialized in `service.RunApp()` and passed to `server.RunServer()`
+- Server creates handlers (pages.Handler, auth.Handler) that own DB references
+- Page functions are methods on `pages.Handler`: `func (h *Handler) LinksPage(req)`
+- Access DB via handler: `h.DB.Users.ByID(...)` - fully typed, no assertions!
 - Migrations are automatically applied on startup via `db/migrations/migrations.go`
 - Connection uses WAL mode for better concurrency
 
@@ -103,16 +111,20 @@ The `-dev` flag enables development mode which serves frontend assets from disk 
 ## Code Patterns
 
 **Adding a new route:**
-1. Define PageFunc or FrameFunc in `pages/` package
-2. Register route in `server/server.go` `setupPageRoutes()`
-3. Use `RequireLogin()` option if authentication is needed
-4. For real-time updates, use `renderSSEStreamOnChannel()`
+1. Define method on `pages.Handler`: `func (h *Handler) MyPage(req *foundation.Request) (*Page, error)`
+2. Access DB via `h.DB.Users.ByID(...)` - fully typed!
+3. Register route in `server/server.go` `setupPageRoutes()` using `s.pages.MyPage`
+4. Use `RequireLogin()` option if authentication is needed
+5. For real-time updates, use `renderSSEStreamOnChannel()`
 
 **Adding a new database table:**
 1. Create up/down migration SQL files in `db/migrations/`
 2. Define model struct in `foundation.go` with `bun` tags
-3. Define DB interface in `foundation.go`
-4. Implement interface in `db/` package
+3. Create new file in `db/` package (e.g., `foobars.go`) with repository struct (e.g., `fooBarsDB`)
+4. Implement CRUD methods on the repository struct
+5. Add repository field to `db.DB` struct in `db/db.go`
+6. Initialize repository in `StartDB()` function in `db/db.go`
+7. Access in page handlers via `h.DB.FooBars.Method(...)`
 
 **CSRF Protection:**
 All POST/PATCH/DELETE/PUT requests require CSRF token in `X-CSRF-TOKEN` header. The token is available in the page via meta tag and can be accessed via `req.CSRFToken()`.
