@@ -11,6 +11,7 @@ import (
 	"github.com/julienschmidt/httprouter"
 	"github.com/mbertschler/foundation"
 	"github.com/mbertschler/foundation/auth"
+	"github.com/mbertschler/foundation/db"
 	"github.com/mbertschler/foundation/pages"
 	"github.com/mbertschler/html"
 )
@@ -49,7 +50,7 @@ func (s *Server) renderPage(ctx *foundation.Context, fn pages.PageFunc, opts ...
 
 func (s *Server) renderSSEStreamOnChannel(ctx *foundation.Context, chanName string, fn pages.FrameFunc, opts ...RenderOption) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
-		req := prepareRequest(ctx, w, r, params, opts...)
+		req := prepareRequest(ctx, s.auth, s.db, w, r, params, opts...)
 		if req == nil {
 			return
 		}
@@ -67,7 +68,7 @@ func (s *Server) renderSSEStreamOnChannel(ctx *foundation.Context, chanName stri
 		}
 		flusher.Flush()
 
-		listener := req.Broadcast.Listen(chanName)
+		listener := s.broadcast.Listen(chanName)
 		defer listener.Close()
 
 		for {
@@ -107,7 +108,7 @@ func (s *Server) renderSSEStreamOnChannel(ctx *foundation.Context, chanName stri
 
 func (s *Server) renderFrame(ctx *foundation.Context, fn pages.FrameFunc, opts ...RenderOption) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
-		req := prepareRequest(ctx, w, r, params, opts...)
+		req := prepareRequest(ctx, s.auth, s.db, w, r, params, opts...)
 		if req == nil {
 			return
 		}
@@ -130,7 +131,7 @@ func (s *Server) renderFrame(ctx *foundation.Context, fn pages.FrameFunc, opts .
 	}
 }
 
-func prepareRequest(ctx *foundation.Context, w http.ResponseWriter, r *http.Request, params httprouter.Params, opts ...RenderOption) *foundation.Request {
+func prepareRequest(ctx *foundation.Context, authHandler *auth.Handler, database *db.DB, w http.ResponseWriter, r *http.Request, params httprouter.Params, opts ...RenderOption) *foundation.Request {
 	req := &foundation.Request{
 		Context: ctx,
 		Writer:  w,
@@ -138,7 +139,7 @@ func prepareRequest(ctx *foundation.Context, w http.ResponseWriter, r *http.Requ
 		Params:  params,
 	}
 
-	sess, err := auth.GetOrCreateSession(req)
+	sess, err := authHandler.GetOrCreateSession(req)
 	if err != nil {
 		log.Println("GetOrCreateSession error:", err)
 		http.Error(w, "internal server error", http.StatusInternalServerError)
@@ -156,7 +157,7 @@ func prepareRequest(ctx *foundation.Context, w http.ResponseWriter, r *http.Requ
 	}
 
 	if sess.UserID.Valid {
-		user, err := req.DB.Users.ByID(req.Context, sess.UserID.Int64)
+		user, err := database.Users.ByID(req.Context, sess.UserID.Int64)
 		if err != nil {
 			log.Println("Users.ByID error:", err)
 			http.Error(w, "internal server error", http.StatusInternalServerError)

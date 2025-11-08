@@ -5,17 +5,16 @@ import (
 	"net/http"
 
 	"github.com/mbertschler/foundation"
-	"github.com/mbertschler/foundation/auth"
 	"github.com/mbertschler/html"
 	"github.com/mbertschler/html/attr"
 	"github.com/pkg/errors"
 )
 
-func LoginPage(req *foundation.Request) (*Page, error) {
+func (h *Handler) LoginPage(req *foundation.Request) (*Page, error) {
 	var loginErr error
 	switch req.Request.Method {
 	case http.MethodPost:
-		loginErr = postLogin(req)
+		loginErr = h.postLogin(req)
 		if loginErr == nil && req.User != nil {
 			http.Redirect(req.Writer, req.Request, "/admin", http.StatusSeeOther)
 			return nil, nil
@@ -32,8 +31,8 @@ func LoginPage(req *foundation.Request) (*Page, error) {
 	return page, nil
 }
 
-func postLogin(req *foundation.Request) error {
-	err := auth.Login(req)
+func (h *Handler) postLogin(req *foundation.Request) error {
+	err := h.Auth.Login(req)
 	if err != nil {
 		log.Println("login error:", err)
 		return errors.New("Invalid username or password.")
@@ -99,11 +98,11 @@ func loginFrame(err error) html.Block {
 	)
 }
 
-func LogoutFrame(req *foundation.Request) (html.Block, error) {
+func (h *Handler) LogoutFrame(req *foundation.Request) (html.Block, error) {
 	if req.Request.Method != http.MethodPost {
 		return nil, errors.New("method not allowed")
 	}
-	err := auth.Logout(req)
+	err := h.Auth.Logout(req)
 	if err != nil {
 		log.Println("logout error:", err)
 		return nil, errors.New("logout failed")

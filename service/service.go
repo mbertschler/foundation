@@ -20,10 +20,11 @@ func RunApp(config *foundation.Config) int {
 	defer cancel()
 
 	context := &foundation.Context{
-		Context:   ctx,
-		Config:    config,
-		Broadcast: broadcast.New(),
+		Context: ctx,
+		Config:  config,
 	}
+
+	broadcaster := broadcast.New()
 
 	var err error
 	if context.Config.LitestreamYml != "" {
@@ -41,13 +42,13 @@ func RunApp(config *foundation.Config) int {
 		}
 	}
 
-	context.DB, err = db.StartDB(context)
+	database, err := db.StartDB(context)
 	if err != nil {
 		log.Println("StartDB error:", err)
 		return 1
 	}
 
-	err = server.RunServer(context)
+	err = server.RunServer(context, database, broadcaster)
 	if err != nil {
 		log.Println("RunServer error:", err)
 		return 1
@@ -60,7 +61,7 @@ func RunApp(config *foundation.Config) int {
 
 	<-sigChan
 	log.Println("shutting down...")
-	err = context.DB.Close()
+	err = database.Close()
 	if err != nil {
 		log.Println("DB.Close error:", err)
 	}

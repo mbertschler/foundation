@@ -14,8 +14,8 @@ import (
 	"github.com/pkg/errors"
 )
 
-func UsersPage(req *foundation.Request) (*Page, error) {
-	usersFrame, err := UsersFrame(req)
+func (h *Handler) UsersPage(req *foundation.Request) (*Page, error) {
+	usersFrame, err := h.UsersFrame(req)
 	if err != nil {
 		return nil, errors.Wrap(err, "usersFrame")
 	}
@@ -32,26 +32,26 @@ func UsersPage(req *foundation.Request) (*Page, error) {
 	return page, nil
 }
 
-func UsersFrame(req *foundation.Request) (html.Block, error) {
+func (h *Handler) UsersFrame(req *foundation.Request) (html.Block, error) {
 	switch req.Request.Method {
 	case http.MethodPost:
-		err := postNewUser(req)
+		err := h.postNewUser(req)
 		if err != nil {
 			return nil, errors.Wrap(err, "postNewUser")
 		}
 	case http.MethodPatch:
-		err := patchUser(req)
+		err := h.patchUser(req)
 		if err != nil {
 			return nil, errors.Wrap(err, "patchUser")
 		}
 	case http.MethodDelete:
-		err := deleteUser(req)
+		err := h.deleteUser(req)
 		if err != nil {
 			return nil, errors.Wrap(err, "deleteUser")
 		}
 	}
 
-	allUsers, err := req.DB.Users.All(req.Context.Context)
+	allUsers, err := h.DB.Users.All(req.Context.Context)
 	if err != nil {
 		return nil, errors.Wrap(err, "All users")
 	}
@@ -70,7 +70,7 @@ func UsersFrame(req *foundation.Request) (html.Block, error) {
 	), nil
 }
 
-func postNewUser(req *foundation.Request) error {
+func (h *Handler) postNewUser(req *foundation.Request) error {
 	r := req.Request
 	err := r.ParseForm()
 	if err != nil {
@@ -82,7 +82,7 @@ func postNewUser(req *foundation.Request) error {
 	username := r.FormValue("username")
 	password := r.FormValue("password")
 
-	exists, err := req.DB.Users.ExistsByUsername(req.Context.Context, username)
+	exists, err := h.DB.Users.ExistsByUsername(req.Context.Context, username)
 	if err != nil {
 		return errors.Wrap(err, "ExistsByUsername")
 	}
@@ -103,7 +103,7 @@ func postNewUser(req *foundation.Request) error {
 		CreatedAt:      time.Now(),
 		UpdatedAt:      time.Now(),
 	}
-	err = req.DB.Users.Insert(req.Context, user)
+	err = h.DB.Users.Insert(req.Context, user)
 	if err != nil {
 		return errors.Wrap(err, "Insert user")
 	}
@@ -111,7 +111,7 @@ func postNewUser(req *foundation.Request) error {
 	return nil
 }
 
-func patchUser(req *foundation.Request) error {
+func (h *Handler) patchUser(req *foundation.Request) error {
 	r := req.Request
 	err := r.ParseForm()
 	if err != nil {
@@ -134,7 +134,7 @@ func patchUser(req *foundation.Request) error {
 	}
 
 	// Get existing user
-	existingUser, err := req.DB.Users.ByID(req.Context.Context, userID)
+	existingUser, err := h.DB.Users.ByID(req.Context.Context, userID)
 	if err != nil {
 		http.Error(req.Writer, "User not found", http.StatusNotFound)
 		return errors.Wrap(err, "user not found")
@@ -146,7 +146,7 @@ func patchUser(req *foundation.Request) error {
 
 	// Check if username is being changed and if it already exists
 	if username != existingUser.UserName {
-		exists, err := req.DB.Users.ExistsByUsername(req.Context.Context, username)
+		exists, err := h.DB.Users.ExistsByUsername(req.Context.Context, username)
 		if err != nil {
 			return errors.Wrap(err, "ExistsByUsername")
 		}
@@ -168,7 +168,7 @@ func patchUser(req *foundation.Request) error {
 	}
 	existingUser.UpdatedAt = time.Now()
 
-	err = req.DB.Users.Update(req.Context.Context, existingUser)
+	err = h.DB.Users.Update(req.Context.Context, existingUser)
 	if err != nil {
 		return errors.Wrap(err, "Update user")
 	}
@@ -177,7 +177,7 @@ func patchUser(req *foundation.Request) error {
 	return nil
 }
 
-func deleteUser(req *foundation.Request) error {
+func (h *Handler) deleteUser(req *foundation.Request) error {
 	// Extract user ID from URL path
 	userIDStr := req.Params.ByName("id")
 	if userIDStr == "" {
@@ -193,14 +193,14 @@ func deleteUser(req *foundation.Request) error {
 	}
 
 	// Check if user exists
-	_, err = req.DB.Users.ByID(req.Context.Context, userID)
+	_, err = h.DB.Users.ByID(req.Context.Context, userID)
 	if err != nil {
 		http.Error(req.Writer, "User not found", http.StatusNotFound)
 		return errors.Wrap(err, "user not found")
 	}
 
 	// Delete user
-	err = req.DB.Users.Delete(req.Context.Context, userID)
+	err = h.DB.Users.Delete(req.Context.Context, userID)
 	if err != nil {
 		return errors.Wrap(err, "Delete user")
 	}
@@ -279,7 +279,7 @@ func newUserForm() html.Block {
 	}
 }
 
-func UserNewFrame(req *foundation.Request) (html.Block, error) {
+func (h *Handler) UserNewFrame(req *foundation.Request) (html.Block, error) {
 	return html.Elem("turbo-frame", attr.Id("user-dialog-frame"),
 		html.Dialog(attr.Id("new-user-dialog").Class("dialog w-full sm:max-w-[425px] max-h-[612px]").Attr("aria-labelledby", "new-user-dialog-title").Attr("aria-describedby", "new-user-dialog-description").Attr("onclick", "if (event.target === this) this.close()"),
 			html.Article(nil,
@@ -333,7 +333,7 @@ func UserNewFrame(req *foundation.Request) (html.Block, error) {
 	), nil
 }
 
-func UserUpdateFrame(req *foundation.Request) (html.Block, error) {
+func (h *Handler) UserUpdateFrame(req *foundation.Request) (html.Block, error) {
 	userIDStr := req.Params.ByName("id")
 	if userIDStr == "" {
 		return nil, errors.New("user ID is required")
@@ -345,7 +345,7 @@ func UserUpdateFrame(req *foundation.Request) (html.Block, error) {
 		return nil, errors.Wrap(err, "invalid user ID")
 	}
 
-	user, err := req.DB.Users.ByID(req.Context.Context, userID)
+	user, err := h.DB.Users.ByID(req.Context.Context, userID)
 	if err != nil {
 		return nil, errors.Wrap(err, "user not found")
 	}

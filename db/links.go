@@ -9,8 +9,6 @@ import (
 
 var (
 	nilLink *foundation.Link
-
-	_ foundation.LinkDB = (*linksDB)(nil)
 )
 
 type linksDB struct {

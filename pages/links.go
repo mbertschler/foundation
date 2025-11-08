@@ -12,8 +12,8 @@ import (
 	"github.com/pkg/errors"
 )
 
-func LinksPage(req *foundation.Request) (*Page, error) {
-	linksFrame, err := LinksFrame(req)
+func (h *Handler) LinksPage(req *foundation.Request) (*Page, error) {
+	linksFrame, err := h.LinksFrame(req)
 	if err != nil {
 		return nil, errors.Wrap(err, "linksFrame")
 	}
@@ -34,26 +34,38 @@ func LinksPage(req *foundation.Request) (*Page, error) {
 	return page, nil
 }
 
-func LinksFrame(req *foundation.Request) (html.Block, error) {
+func (h *Handler) LinksFrame(req *foundation.Request) (html.Block, error) {
 	switch req.Request.Method {
 	case http.MethodPost:
-		err := postNewLink(req)
+		err := h.postNewLink(req)
 		if err != nil {
 			return nil, errors.Wrap(err, "postNewLink")
 		}
+		err = h.Broadcast.Send("links")
+		if err != nil {
+			return nil, errors.Wrap(err, "Broadcast.Send")
+		}
 	case http.MethodPatch:
-		err := patchLink(req)
+		err := h.patchLink(req)
 		if err != nil {
 			return nil, errors.Wrap(err, "patchLink")
 		}
+		err = h.Broadcast.Send("links")
+		if err != nil {
+			return nil, errors.Wrap(err, "Broadcast.Send")
+		}
 	case http.MethodDelete:
-		err := deleteLink(req)
+		err := h.deleteLink(req)
 		if err != nil {
 			return nil, errors.Wrap(err, "deleteLink")
 		}
+		err = h.Broadcast.Send("links")
+		if err != nil {
+			return nil, errors.Wrap(err, "Broadcast.Send")
+		}
 	}
 
-	allLinks, err := req.DB.Links.AllWithVisitCounts(req.Context.Context)
+	allLinks, err := h.DB.Links.AllWithVisitCounts(req.Context.Context)
 	if err != nil {
 		return nil, errors.Wrap(err, "AllWithVisitCounts")
 	}
@@ -72,7 +84,7 @@ func LinksFrame(req *foundation.Request) (html.Block, error) {
 	), nil
 }
 
-func postNewLink(req *foundation.Request) error {
+func (h *Handler) postNewLink(req *foundation.Request) error {
 	r := req.Request
 	err := r.ParseForm()
 	if err != nil {
@@ -83,7 +95,7 @@ func postNewLink(req *foundation.Request) error {
 	shortLink := r.FormValue("short_link")
 	fullURL := r.FormValue("full_url")
 
-	_, err = req.DB.Links.ByShortLink(req.Context.Context, shortLink)
+	_, err = h.DB.Links.ByShortLink(req.Context.Context, shortLink)
 	if err == nil {
 		http.Error(req.Writer, fmt.Sprintf("Short link %q already exists", shortLink), http.StatusConflict)
 		return errors.New("short link exists")
@@ -101,12 +113,12 @@ func postNewLink(req *foundation.Request) error {
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
 	}
-	err = req.DB.Links.Insert(req.Context, link)
+	err = h.DB.Links.Insert(req.Context, link)
 	if err != nil {
 		return errors.Wrap(err, "Insert link")
 	}
 
-	err = req.Broadcast.Send("links")
+	err = h.Broadcast.Send("links")
 	if err != nil {
 		return errors.Wrap(err, "Broadcast.Send")
 	}
@@ -114,7 +126,7 @@ func postNewLink(req *foundation.Request) error {
 	return nil
 }
 
-func patchLink(req *foundation.Request) error {
+func (h *Handler) patchLink(req *foundation.Request) error {
 	r := req.Request
 	err := r.ParseForm()
 	if err != nil {
@@ -128,7 +140,7 @@ func patchLink(req *foundation.Request) error {
 		return errors.New("missing short link")
 	}
 
-	existingLink, err := req.DB.Links.ByShortLink(req.Context.Context, oldShortLink)
+	existingLink, err := h.DB.Links.ByShortLink(req.Context.Context, oldShortLink)
 	if err != nil {
 		http.Error(req.Writer, "Link not found", http.StatusNotFound)
 		return errors.Wrap(err, "link not found")
@@ -141,24 +153,24 @@ func patchLink(req *foundation.Request) error {
 		// Just update the URL
 		existingLink.FullURL = newFullURL
 		existingLink.UpdatedAt = time.Now()
-		err = req.DB.Links.Update(req.Context, existingLink)
+		err = h.DB.Links.Update(req.Context, existingLink)
 		if err != nil {
 			return errors.Wrap(err, "Update link")
 		}
-		err = req.Broadcast.Send("links")
+		err = h.Broadcast.Send("links")
 		if err != nil {
 			return errors.Wrap(err, "Broadcast.Send")
 		}
 	} else {
 		// Check if new short link already exists
-		_, err := req.DB.Links.ByShortLink(req.Context.Context, newShortLink)
+		_, err := h.DB.Links.ByShortLink(req.Context.Context, newShortLink)
 		if err == nil {
 			http.Error(req.Writer, fmt.Sprintf("Short link %q already exists", newShortLink), http.StatusConflict)
 			return errors.New("short link exists")
 		}
 
 		// Replace the link: delete old, insert new
-		err = req.DB.Links.Delete(req.Context.Context, oldShortLink)
+		err = h.DB.Links.Delete(req.Context.Context, oldShortLink)
 		if err != nil {
 			return errors.Wrap(err, "Delete old link")
 		}
@@ -170,12 +182,12 @@ func patchLink(req *foundation.Request) error {
 			CreatedAt: existingLink.CreatedAt,
 			UpdatedAt: time.Now(),
 		}
-		err = req.DB.Links.Insert(req.Context, newLink)
+		err = h.DB.Links.Insert(req.Context, newLink)
 		if err != nil {
 			return errors.Wrap(err, "Insert new link")
 		}
 
-		err = req.Broadcast.Send("links")
+		err = h.Broadcast.Send("links")
 		if err != nil {
 			return errors.Wrap(err, "Broadcast.Send")
 		}
@@ -184,25 +196,25 @@ func patchLink(req *foundation.Request) error {
 	return nil
 }
 
-func deleteLink(req *foundation.Request) error {
+func (h *Handler) deleteLink(req *foundation.Request) error {
 	shortLink := req.Params.ByName("short_link")
 	if shortLink == "" {
 		http.Error(req.Writer, "Short link is required", http.StatusBadRequest)
 		return errors.New("missing short link")
 	}
 
-	_, err := req.DB.Links.ByShortLink(req.Context.Context, shortLink)
+	_, err := h.DB.Links.ByShortLink(req.Context.Context, shortLink)
 	if err != nil {
 		http.Error(req.Writer, "Link not found", http.StatusNotFound)
 		return errors.Wrap(err, "link not found")
 	}
 
-	err = req.DB.Links.Delete(req.Context.Context, shortLink)
+	err = h.DB.Links.Delete(req.Context.Context, shortLink)
 	if err != nil {
 		return errors.Wrap(err, "Delete link")
 	}
 
-	err = req.Broadcast.Send("links")
+	err = h.Broadcast.Send("links")
 	if err != nil {
 		return errors.Wrap(err, "Broadcast.Send")
 	}
@@ -289,7 +301,7 @@ func newLinkForm() html.Block {
 	}
 }
 
-func LinkNewFrame(req *foundation.Request) (html.Block, error) {
+func (h *Handler) LinkNewFrame(req *foundation.Request) (html.Block, error) {
 	return html.Elem("turbo-frame", attr.Id("link-dialog-frame"),
 		html.Dialog(attr.Id("new-link-dialog").Class("dialog w-full sm:max-w-[425px] max-h-[612px]").Attr("aria-labelledby", "new-link-dialog-title").Attr("aria-describedby", "new-link-dialog-description").Attr("onclick", "if (event.target === this) this.close()"),
 			html.Article(nil,
@@ -337,13 +349,13 @@ func LinkNewFrame(req *foundation.Request) (html.Block, error) {
 	), nil
 }
 
-func LinkUpdateFrame(req *foundation.Request) (html.Block, error) {
+func (h *Handler) LinkUpdateFrame(req *foundation.Request) (html.Block, error) {
 	shortLink := req.Params.ByName("short_link")
 	if shortLink == "" {
 		return nil, errors.New("short link is required")
 	}
 
-	link, err := req.DB.Links.ByShortLink(req.Context.Context, shortLink)
+	link, err := h.DB.Links.ByShortLink(req.Context.Context, shortLink)
 	if err != nil {
 		return nil, errors.Wrap(err, "link not found")
 	}
@@ -395,10 +407,10 @@ func LinkUpdateFrame(req *foundation.Request) (html.Block, error) {
 	), nil
 }
 
-func ShortLinkHandler(req *foundation.Request) (html.Block, error) {
+func (h *Handler) ShortLinkHandler(req *foundation.Request) (html.Block, error) {
 	path := strings.TrimPrefix(req.Request.URL.Path, "/")
 
-	link, err := req.DB.Links.ByShortLink(req.Context.Context, path)
+	link, err := h.DB.Links.ByShortLink(req.Context.Context, path)
 	if err != nil || link == nil {
 		req.Writer.WriteHeader(http.StatusNotFound)
 		return html.Text("page not found"), errors.New("not found")
@@ -408,12 +420,12 @@ func ShortLinkHandler(req *foundation.Request) (html.Block, error) {
 		ShortLink: path,
 		UserID:    req.Session.UserID,
 	}
-	err = req.DB.Visits.Insert(req.Context.Context, visit)
+	err = h.DB.Visits.Insert(req.Context.Context, visit)
 	if err != nil {
 		return nil, errors.Wrap(err, "Visits.Insert")
 	}
 
-	err = req.Broadcast.Send("links")
+	err = h.Broadcast.Send("links")
 	if err != nil {
 		return nil, errors.Wrap(err, "Broadcast.Send")
 	}
@@ -422,8 +434,8 @@ func ShortLinkHandler(req *foundation.Request) (html.Block, error) {
 	return nil, nil
 }
 
-func LinksStream(req *foundation.Request) (html.Block, error) {
-	frame, err := LinksFrame(req)
+func (h *Handler) LinksStream(req *foundation.Request) (html.Block, error) {
+	frame, err := h.LinksFrame(req)
 	if err != nil {
 		return nil, errors.Wrap(err, "LinksFrame")
 	}

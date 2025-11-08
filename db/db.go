@@ -15,7 +15,24 @@ import (
 	"github.com/uptrace/bun/extra/bundebug"
 )
 
-func StartDB(context *foundation.Context) (*foundation.DB, error) {
+type DB struct {
+	Users    *usersDB
+	Sessions *sessionsDB
+	Links    *linksDB
+	Visits   *visitsDB
+
+	sqlDB *sql.DB
+}
+
+func (db *DB) SetSQLDB(sqlDB *sql.DB) {
+	db.sqlDB = sqlDB
+}
+
+func (db *DB) Close() error {
+	return db.sqlDB.Close()
+}
+
+func StartDB(context *foundation.Context) (*DB, error) {
 	ctx := context.Context
 
 	path := context.Config.DBPath
@@ -59,7 +76,7 @@ func StartDB(context *foundation.Context) (*foundation.DB, error) {
 	sessionDB := &sessionsDB{db: db}
 	sessionDB.startCleanup()
 
-	fdb := &foundation.DB{
+	fdb := &DB{
 		Users:    &usersDB{db: db},
 		Sessions: sessionDB,
 		Links:    &linksDB{db: db},

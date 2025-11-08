@@ -7,9 +7,6 @@ import (
 	"github.com/uptrace/bun"
 )
 
-var (
-	_ foundation.VisitDB = (*visitsDB)(nil)
-)
 
 type visitsDB struct {
 	db *bun.DB
