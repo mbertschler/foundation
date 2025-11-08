@@ -9,24 +9,27 @@ import (
 	"github.com/mbertschler/foundation/auth"
 	"github.com/mbertschler/foundation/db"
 	"github.com/mbertschler/foundation/pages"
+	"github.com/mbertschler/foundation/server/broadcast"
 	"github.com/pkg/errors"
 )
 
 type Server struct {
-	ctx     *foundation.Context
-	db      *db.DB
-	router  *httprouter.Router
-	pages   *pages.Handler
-	auth    *auth.Handler
+	ctx       *foundation.Context
+	db        *db.DB
+	broadcast *broadcast.Broadcaster
+	router    *httprouter.Router
+	pages     *pages.Handler
+	auth      *auth.Handler
 }
 
-func RunServer(ctx *foundation.Context, database *db.DB) error {
+func RunServer(ctx *foundation.Context, database *db.DB, broadcaster *broadcast.Broadcaster) error {
 	srv := &Server{
-		ctx:    ctx,
-		db:     database,
-		router: httprouter.New(),
-		pages:  pages.NewHandler(database),
-		auth:   auth.NewHandler(database),
+		ctx:       ctx,
+		db:        database,
+		broadcast: broadcaster,
+		router:    httprouter.New(),
+		pages:     pages.NewHandler(database, broadcaster),
+		auth:      auth.NewHandler(database),
 	}
 
 	srv.setupPageRoutes()

@@ -20,10 +20,11 @@ func RunApp(config *foundation.Config) int {
 	defer cancel()
 
 	context := &foundation.Context{
-		Context:   ctx,
-		Config:    config,
-		Broadcast: broadcast.New(),
+		Context: ctx,
+		Config:  config,
 	}
+
+	broadcaster := broadcast.New()
 
 	var err error
 	if context.Config.LitestreamYml != "" {
@@ -47,7 +48,7 @@ func RunApp(config *foundation.Config) int {
 		return 1
 	}
 
-	err = server.RunServer(context, database)
+	err = server.RunServer(context, database, broadcaster)
 	if err != nil {
 		log.Println("RunServer error:", err)
 		return 1

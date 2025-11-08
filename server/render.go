@@ -68,7 +68,7 @@ func (s *Server) renderSSEStreamOnChannel(ctx *foundation.Context, chanName stri
 		}
 		flusher.Flush()
 
-		listener := req.Broadcast.Listen(chanName)
+		listener := s.broadcast.Listen(chanName)
 		defer listener.Close()
 
 		for {

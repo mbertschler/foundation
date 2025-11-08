@@ -47,21 +47,23 @@ This starts both the Go server and the frontend build watcher. The app will be a
 4. Page/frame handler methods (on `pages.Handler`) have access to DB via `h.DB` and return HTML using the `github.com/mbertschler/html` builder
 
 **Key Components:**
-- `foundation.Context` - Application-level context containing Config and Broadcast (no DB!)
-- `foundation.Request` - Per-request context with Session, User, and HTTP primitives (no DB!)
-- `server.Server` - HTTP server with handlers that own the DB reference
-- `pages.Handler` - Page handler struct with `DB *db.DB` and `Auth *auth.Handler` fields
+- `foundation.Context` - Minimal application-level context containing only Config (no DB, no Broadcast!)
+- `foundation.Request` - Per-request context with Session, User, and HTTP primitives (no DB, no Broadcast!)
+- `server.Server` - HTTP server with handlers that own infrastructure dependencies
+- `pages.Handler` - Page handler struct with `DB *db.DB`, `Auth *auth.Handler`, and `Broadcast *broadcast.Broadcaster` fields
 - `auth.Handler` - Auth handler struct with `DB *db.DB` field for session/user operations
 - `db.DB` - Database struct with concrete repository implementations (Users, Sessions, Links, Visits)
+- `broadcast.Broadcaster` - Pub/sub notification system for real-time updates (future-proof for Redis/NATS)
 
 **Database Layer:**
 - Uses SQLite via `uptrace/bun` ORM with SQL migrations in `db/migrations/`
 - Model structs (User, Session, Link, LinkVisit) are defined in `foundation.go` with `bun` tags
 - DB struct and repository implementations are in `db/` package
-- DB is initialized in `service.RunApp()` and passed to `server.RunServer()`
-- Server creates handlers (pages.Handler, auth.Handler) that own DB references
+- DB and Broadcast are initialized in `service.RunApp()` and passed to `server.RunServer()`
+- Server creates handlers (pages.Handler, auth.Handler) that own infrastructure references
 - Page functions are methods on `pages.Handler`: `func (h *Handler) LinksPage(req)`
 - Access DB via handler: `h.DB.Users.ByID(...)` - fully typed, no assertions!
+- Access Broadcast via handler: `h.Broadcast.Send("channel")` - for real-time updates
 - Migrations are automatically applied on startup via `db/migrations/migrations.go`
 - Connection uses WAL mode for better concurrency
 
@@ -77,6 +79,9 @@ This starts both the Go server and the frontend build watcher. The app will be a
 - Custom broadcast system in `server/broadcast/broadcast.go` for SSE (Server-Sent Events)
 - Listeners can subscribe to named channels
 - Used for real-time updates to the UI (e.g., links list updates)
+- Page handlers send notifications via `h.Broadcast.Send("channel-name")`
+- SSE streams listen via `s.broadcast.Listen("channel-name")` in server
+- Architecture supports future scaling to Redis pub/sub or NATS for multi-instance deployments
 
 ### Frontend Architecture
 
@@ -113,9 +118,10 @@ The `-dev` flag enables development mode which serves frontend assets from disk 
 **Adding a new route:**
 1. Define method on `pages.Handler`: `func (h *Handler) MyPage(req *foundation.Request) (*Page, error)`
 2. Access DB via `h.DB.Users.ByID(...)` - fully typed!
-3. Register route in `server/server.go` `setupPageRoutes()` using `s.pages.MyPage`
-4. Use `RequireLogin()` option if authentication is needed
-5. For real-time updates, use `renderSSEStreamOnChannel()`
+3. Send real-time updates via `h.Broadcast.Send("channel")` after mutations
+4. Register route in `server/server.go` `setupPageRoutes()` using `s.pages.MyPage`
+5. Use `RequireLogin()` option if authentication is needed
+6. For SSE streams, use `renderSSEStreamOnChannel()`
 
 **Adding a new database table:**
 1. Create up/down migration SQL files in `db/migrations/`

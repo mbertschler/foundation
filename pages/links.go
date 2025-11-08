@@ -46,7 +46,7 @@ func (h *Handler) LinksFrame(req *foundation.Request) (html.Block, error) {
 		if err != nil {
 			return nil, errors.Wrap(err, "patchLink")
 		}
-		req.Broadcast.Send("links")
+		h.Broadcast.Send("links")
 	case http.MethodDelete:
 		err := h.deleteLink(req)
 		if err != nil {
@@ -107,7 +107,7 @@ func (h *Handler) postNewLink(req *foundation.Request) error {
 		return errors.Wrap(err, "Insert link")
 	}
 
-	err = req.Broadcast.Send("links")
+	err = h.Broadcast.Send("links")
 	if err != nil {
 		return errors.Wrap(err, "Broadcast.Send")
 	}
@@ -146,7 +146,7 @@ func (h *Handler) patchLink(req *foundation.Request) error {
 		if err != nil {
 			return errors.Wrap(err, "Update link")
 		}
-		err = req.Broadcast.Send("links")
+		err = h.Broadcast.Send("links")
 		if err != nil {
 			return errors.Wrap(err, "Broadcast.Send")
 		}
@@ -176,7 +176,7 @@ func (h *Handler) patchLink(req *foundation.Request) error {
 			return errors.Wrap(err, "Insert new link")
 		}
 
-		err = req.Broadcast.Send("links")
+		err = h.Broadcast.Send("links")
 		if err != nil {
 			return errors.Wrap(err, "Broadcast.Send")
 		}
@@ -203,7 +203,7 @@ func (h *Handler) deleteLink(req *foundation.Request) error {
 		return errors.Wrap(err, "Delete link")
 	}
 
-	err = req.Broadcast.Send("links")
+	err = h.Broadcast.Send("links")
 	if err != nil {
 		return errors.Wrap(err, "Broadcast.Send")
 	}
@@ -414,7 +414,7 @@ func (h *Handler) ShortLinkHandler(req *foundation.Request) (html.Block, error) 
 		return nil, errors.Wrap(err, "Visits.Insert")
 	}
 
-	err = req.Broadcast.Send("links")
+	err = h.Broadcast.Send("links")
 	if err != nil {
 		return nil, errors.Wrap(err, "Broadcast.Send")
 	}
